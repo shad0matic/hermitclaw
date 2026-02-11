@@ -245,6 +245,63 @@ For email and calendar integration, see [gmail-pubsub-setup.md](gmail-pubsub-set
 - **Option B (recommended):** Pub/Sub webhooks for push notifications
 - **Setup:** Requires Google Cloud project, OAuth credentials, Tailscale Funnel
 
+## Agent Coordination Setup
+
+Prevent file edit conflicts between agents and track all activity in Postgres.
+
+### Create the file_claims table
+
+```sql
+CREATE TABLE IF NOT EXISTS ops.file_claims (
+  id BIGSERIAL PRIMARY KEY,
+  agent_id TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  description TEXT,
+  claimed_at TIMESTAMPTZ DEFAULT now(),
+  released_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX idx_file_claims_unique_active
+  ON ops.file_claims (file_path, agent_id) WHERE released_at IS NULL;
+CREATE INDEX idx_file_claims_active
+  ON ops.file_claims (file_path) WHERE released_at IS NULL;
+CREATE INDEX idx_file_claims_agent
+  ON ops.file_claims (agent_id) WHERE released_at IS NULL;
+```
+
+### Install the git post-commit hook
+
+The shared hook lives at `$WORKSPACE/scripts/git-post-commit-hook.sh`. Symlink it into each repo:
+
+```bash
+ln -sf $WORKSPACE/scripts/git-post-commit-hook.sh $PROJECTS/oclaw-ops/.git/hooks/post-commit
+ln -sf $WORKSPACE/scripts/git-post-commit-hook.sh $PROJECTS/hermitclaw/.git/hooks/post-commit
+ln -sf $WORKSPACE/scripts/git-post-commit-hook.sh $WORKSPACE/.git/hooks/post-commit
+chmod +x $WORKSPACE/scripts/git-post-commit-hook.sh
+```
+
+The hook auto-logs every commit to `ops.agent_events` with hash, message, changed files, and repo name. Agent is resolved from `memory.agent_profiles` (no hardcoded list).
+
+### File claim CLI
+
+Located at `$WORKSPACE/tools/file-claim.mjs`. Commands:
+
+- **claim** — `node tools/file-claim.mjs claim --agent kevin --file src/app.tsx --desc "refactoring"`
+- **release** — `node tools/file-claim.mjs release --agent kevin --file src/app.tsx`
+- **release-all** — `node tools/file-claim.mjs release-all --agent kevin`
+- **check** — `node tools/file-claim.mjs check --file src/app.tsx`
+- **active** — `node tools/file-claim.mjs active [--agent kevin]`
+
+### Task event logging
+
+`tools/task-tracker.mjs` automatically logs `task_start`, `task_complete`, and `task_fail` events to `ops.agent_events`. No extra configuration needed.
+
+### Watchdog stale claim cleanup
+
+`scripts/task-watchdog.mjs` releases file claims older than 2h and logs `task_stalled` events for timed-out tasks. Runs via the existing watchdog cron (every 2 minutes).
+
+---
+
 ## Troubleshooting
 
 - **Rate limits:** Configure fallbacks in OpenClaw config (`agents.defaults.model.fallbacks`)

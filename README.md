@@ -23,6 +23,7 @@ dashboard/       # → see oclaw-ops repo (Next.js Mission Control dashboard)
 - **Workflow Engine** — YAML-defined workflows with multi-step agent orchestration
 - **Cost Tracking** — EUR-based cost monitoring with daily ECB FX rates
 - **System Metrics** — 24h rolling buffer for dashboard charts
+- **Agent Coordination** — File claim system to prevent multi-agent edit conflicts, git commit tracking, and task event logging to Postgres
 - **Backup & Reliability** — Automated daily backups, systemd services, log rotation
 
 ## Quick Start
