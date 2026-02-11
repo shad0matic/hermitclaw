@@ -1,54 +1,18 @@
-# OpenClaw + Postgres Agent Infrastructure — Deployment Guide
-**Author:** Kevin 🍌 (with Boss)
-**Started:** 10/02/2026
-**Last updated:** 10/02/2026
-**Status:** Phase 5 complete, Phase 6 in progress
+# HermitClaw Deployment Guide 🦀🍌
 
-This guide documents everything needed to reproduce our agent infrastructure from scratch.
+**A portable, self-hosted AI agent infrastructure built on [OpenClaw](https://github.com/openclaw/openclaw).**
 
----
+This guide walks you through setting up a fully functional OpenClaw agent hub with Postgres memory, multi-agent workflows, and a dashboard. It’s designed for a single VPS or local machine and can scale to multiple agents.
 
-## Overview
-
-What we're building:
-- **OpenClaw** — AI assistant on a VPS, accessible via Telegram
-- **Multi-agent team** — specialized agents coordinated by a lead agent (Kevin)
-- **Postgres + pgvector** — long-term memory with semantic search, workflow engine, task coordination
-- **Gmail/Calendar** — via gog CLI + Google Pub/Sub webhooks
-- **Mission Control** — mobile-friendly dashboard via Tailscale
-
-### Architecture
-```
-┌─────────────────────────────────────────────────────┐
-│                      VPS (22GB RAM, Debian)          │
-│                                                      │
-│  ┌──────────┐   ┌───────────────────────────┐       │
-│  │ OpenClaw │   │  Postgres 18.1 (bare metal)│       │
-│  │ Gateway  │   │  pgvector 0.8.1            │       │
-│  │          │◄──┤  DB: openclaw_db           │       │
-│  │ ┌──────┐ │   │  ├── memory schema         │       │
-│  │ │Kevin │ │   │  └── ops schema            │       │
-│  │ │(main)│ │   └───────────────────────────┘       │
-│  │ └──┬───┘ │                                        │
-│  │ ┌──┴─────┐   ┌───────────────────────────┐       │
-│  │ │ Agents │   │  gog Gmail watch           │       │
-│  │ │Nefario │   │  (Pub/Sub → OpenClaw hook) │       │
-│  │ │XReader │   └───────────────────────────┘       │
-│  │ └────────┘                                        │
-│  └──────────┘   ┌───────────────────────────┐       │
-│                  │  Mission Control (Next.js) │       │
-│                  │  Tailscale-only access     │       │
-│                  └───────────────────────────┘       │
-└─────────────────────────────────────────────────────┘
-         │              │               │
-      Telegram     Tailscale        Gmail/Cal
-      (chat)      (dashboard)     (Pub/Sub)
-```
+**Born from a real deployment** — built by Kevin 🍌 (lead minion) as a production setup. Every step here is battle-tested.
 
 ## Prerequisites
 
-- **VPS:** Linux (Debian/Ubuntu), 8GB+ RAM recommended, 20GB+ disk
-- **Accounts needed:**
+- **OS:** Debian/Ubuntu (preferred) or any Linux/macOS with Node.js support
+- **Node.js:** 22+ (24 recommended)
+- **Postgres:** 16+ (18 recommended) with `pgvector` for embeddings
+- **GitHub PAT:** Fine-grained personal access token with repo read/write (for pushing your workspace)
+- **API keys:**
   - Anthropic API key (Claude models)
   - OpenAI API key (embeddings + Whisper STT)
   - xAI API key (Grok-powered agents)
@@ -56,302 +20,251 @@ What we're building:
   - ElevenLabs API key (TTS voice)
   - Brave Search API key (web search)
   - Telegram bot token (@BotFather)
-  - Gmail account for agent (OAuth via gog CLI)
 
----
+## Step 1: Install OpenClaw
 
-## Phase 0 — OpenClaw Base Install ✅
-*Completed 09/02/2026*
+Follow the [OpenClaw installation guide](https://docs.openclaw.ai/installation) or run:
 
 ```bash
-# Install Node.js 24+
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo bash -
-sudo apt install -y nodejs
-
-# Install OpenClaw
-sudo npm install -g openclaw
-
-# Run onboarding wizard
+# On Debian/Ubuntu
+curl -fsSL https://get.openclaw.ai | bash
+# After install, onboard wizard
 openclaw onboard
 ```
 
-Key config:
-- Multi-provider fallback: Opus → GPT-5.2 → Grok-3 → Gemini 2.5 Pro
-- 3 agents: Kevin (main), Dr. Nefario (researcher), X Reader (content fetcher)
-- Telegram bindings with topic routing
+The wizard will prompt for Telegram bot token + basic config. Pick “local” mode for a single machine.
 
-Systemd service:
+## Step 2: Set Up Postgres with pgvector
+
+**Install Postgres + pgvector:**
+
 ```bash
-openclaw gateway start
-# Runs as user service (openclaw-gateway.service), Restart=always, RestartSec=5
-```
-
-Memory limits (`~/.config/systemd/user/openclaw-gateway.service.d/limits.conf`):
-```ini
-[Service]
-MemoryMax=4G
-MemoryHigh=3G
-MemorySwapMax=0
-```
-
----
-
-## Phase 1 — Postgres Foundation ✅
-*Completed 10/02/2026*
-
-### Install (bare metal, not Docker)
-```bash
-sudo apt install -y postgresql-18 postgresql-18-pgvector
+# Debian/Ubuntu
+sudo apt update && sudo apt install -y postgresql-16 postgresql-contrib build-essential git
+# Build pgvector (as postgres user or sudo)
+sudo -u postgres bash -c "git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git && cd pgvector && make && make install"
+# Create user + DB
 sudo -u postgres createuser --superuser $USER
 sudo -u postgres createdb openclaw_db -O $USER
-psql openclaw_db -c 'CREATE EXTENSION vector;'
 ```
 
-### Config
-- **Postgres 18.1** bare metal, localhost only
-- **pgvector 0.8.1** for embeddings
-- **Single DB:** `openclaw_db` with two schemas (`memory` + `ops`)
+**Enable pgvector extension + create schemas:**
+
+```bash
+psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector"
+psql -d openclaw_db -c "CREATE SCHEMA IF NOT EXISTS memory"
+psql -d openclaw_db -c "CREATE SCHEMA IF NOT EXISTS ops"
+```
+
+**Schema setup:** See [postgres-setup.md](postgres-setup.md) for full table definitions (23 tables across `memory` and `ops`).
+
+- **DB:** `openclaw_db` | **User:** `$USER` (peer auth)
 - **Auth:** Unix socket peer auth (no password needed for local user)
 - **Connection:** `postgresql://$USER@localhost:5432/openclaw_db` via `/var/run/postgresql`
 
-### Schemas
-**memory schema:** `memories`, `daily_notes`, `agent_profiles`
-**ops schema:** `workflows`, `runs`, `steps`, `stories`, `tasks`, `agent_events`, `subscriptions`, `fx_rates`, `cost_snapshots`
+## Step 3: Clone HermitClaw (Reusable Infrastructure)
 
-### Decision: One DB, two schemas
-- Simpler than two databases
-- Cross-schema queries possible (`memory.memories JOIN ops.agent_events`)
-- Single connection string for Prisma
+```bash
+git clone https://github.com/shad0matic/hermitclaw.git
+cd hermitclaw
+npm install
+```
 
----
+This gives you the tools, scripts, workflows, and templates.
 
-## Phase 2 — Memory Migration ✅
-*Completed 10/02/2026*
+## Step 4: Create Your Private Workspace
 
-- Imported 14 memories + 1 daily note from markdown files
-- Embeddings: OpenAI text-embedding-3-small (1536 dimensions)
-- Hybrid search: vector similarity + keyword matching
+Your private workspace is a **separate, personal repo** that holds your memory, identity, and unique configs. It’s distinct from `hermitclaw` (the shared framework) to keep personal data private.
 
----
+### Why Separate?
+- `hermitclaw` = reusable, sanitized tools and guides for anyone
+- `your-workspace` = your agent’s memory (MEMORY.md), user details (USER.md), and personal notes
+- Never mix personal data into a shared repo
 
-## Phase 3 — Agent Integration ✅
-*Completed 10/02/2026*
+### Create Your Workspace Repo
 
-Tool: `tools/pg-memory.mjs`
-- Commands: search, insert, log, daily, stats
-- Vector similarity search with cosine distance
-- Activity logging to `ops.agent_events`
+1. **On GitHub:**
+   - Go to [github.com/new](https://github.com/new)
+   - Name it `yourname-workspace` (e.g., `john-workspace`)
+   - Set to **Private** ✅
+   - Description: "My OpenClaw agent workspace — personal memory and configs"
+   - Don’t initialize with README
+   - Click **Create Repository**
 
----
+2. **Add to PAT:**
+   - Go to Settings → Developer Settings → Personal Access Tokens → edit your fine-grained PAT
+   - Add `yourname-workspace` to the repo permissions (read & write)
 
-## Phase 4 — Workflow Engine ✅
-*Completed 10/02/2026*
+3. **Clone Locally:**
+   ```bash
+   git clone https://github.com/YOUR_USER/yourname-workspace.git
+   cd yourname-workspace
+   ```
 
-Tool: `tools/workflow-runner.mjs`
-- YAML workflow definitions (`workflows/` directory)
-- Multi-step execution with agent assignment
-- Status tracking: pending → running → completed/failed
-- Tested with `research-summarize.yaml`
+4. **Set Up Workspace Structure:**
+   Copy templates from `hermitclaw` and customize them:
+   ```bash
+   # Copy templates from hermitclaw
+   cp -r /path/to/hermitclaw/templates/* .
+   # Copy .gitignore to exclude sensitive files
+   cp /path/to/hermitclaw/.gitignore .
+   # Create memory dir for daily notes
+   mkdir -p memory
+   ```
 
----
+5. **Customize Key Files:**
+   - **AGENTS.md** — Your operational rules. Defines boot context, memory usage, and Postgres recall.
+   - **SOUL.md** — Your agent’s personality and vibe. Edit to match how you want your agent to behave.
+   - **USER.md** — Details about you (name, timezone, projects, goals). Fill this in so your agent understands you.
+   - **TOOLS.md** — Environment-specific notes (camera names, SSH hosts, etc.). Add as needed.
+   - **MEMORY.md** — Your agent’s long-term memory. Start with a few key facts about yourself or projects.
 
-## Phase 5 — Agent Leveling ✅
-*Completed 10/02/2026*
+   Example for `USER.md`:
+   ```markdown
+   # USER.md - About My Human
 
-Tool: `tools/agent-levels.mjs`
-- 4 levels: Observer (L1) → Advisor (L2) → Operator (L3) → Autonomous (L4)
-- All agents seeded at L1
-- Performance reviews + promotion tracking
+   - **Name:** John Doe
+   - **What to call them:** John
+   - **Timezone:** UTC-5 (Eastern Time)
+   - **Communication style:** Direct, no-fluff answers
 
----
+   ## Professional
+   - **Role:** Software Engineer
+   - **Company/Projects:** Acme Corp, personal app
 
-## Phase 6 — Mission Control Dashboard 🚧
-*In progress — Boss vibe-coding in Cursor*
+   ## Goals
+   - Ship app by Q2 2026
+   ```
+
+6. **Commit & Push:**
+   ```bash
+   git add -A
+   git commit -m "Initial workspace setup — memory, identity, configs"
+   git push -u origin main
+   ```
+
+### How Your Workspace Works
+
+- **Purpose:** This is your agent’s home. It’s where memory files, personal context, and instance-specific configs live.
+- **Security:** `.gitignore` excludes `.env`, logs, and OpenClaw internals. Never commit API keys or secrets.
+- **Sync:** Scripts like `memory-sync.mjs` (from `hermitclaw`) sync your MEMORY.md and daily notes to Postgres for long-term recall.
+- **Backup:** Your private repo is versioned on GitHub — a natural backup of your agent’s brain.
+
+## Step 5: Set Up Postgres Memory Tools
+
+Copy the memory tools from `hermitclaw` to your workspace. These let your agent recall context even after session compaction:
+
+```bash
+# From your workspace dir
+cp -r /path/to/hermitclaw/scripts/* scripts/
+cp -r /path/to/hermitclaw/tools/* tools/
+```
+
+- **`memory-sync.mjs`** — Syncs MEMORY.md + daily notes to Postgres with embeddings
+- **`memory-recall.mjs`** — Semantic search to recall memories (used on boot or after compaction)
+- **`pg-memory.mjs`** — CLI for memory operations (search/insert/log)
+
+Run an initial sync:
+
+```bash
+cd /path/to/yourname-workspace
+node scripts/memory-sync.mjs
+```
+
+Set up a cron to auto-sync every 6h:
+
+```bash
+openclaw cron add --name memory-sync --expr "0 */6 * * *" --text "Run memory sync: execute node scripts/memory-sync.mjs"
+```
+
+## Step 6: Configure Agent Behavior (Optional)
+
+Your agent follows rules from `AGENTS.md` and vibe from `SOUL.md`. Tweak these in your workspace to match your needs:
+
+- **Trust level:** Start conservative (ask before external actions) and escalate as trust grows
+- **Quiet hours:** Define when notifications should be silent
+- **Memory recall:** Instructions to use Postgres search when context is lost
+
+## Step 7: Install Dashboard (Optional)
+
+The dashboard ("Minions Control") is a Next.js app for monitoring agents, costs, and system health. It’s in a separate repo:
 
 - **Repo:** `github.com/YOUR_USER/oclaw-ops`
 - **Local path:** `$HOME/projects/oclaw-ops/`
 - **Stack:** Next.js + Prisma + Tailwind + shadcn/ui
-- **Spec:** `SPEC.md` in repo root
-- **Access:** Tailscale only, no auth
+- **Setup:** Clone, `npm install`, set `DATABASE_URL` in `.env`, `npm run dev`
+- **Access:** Tailscale-only + basic auth for security
 
----
+## Step 8: Configure System Services & Crons
 
-## Phase 7 — Cross-Agent Intelligence ✅
-*Completed 10/02/2026*
+For reliability, set up systemd services and cron jobs:
 
-Tool: `tools/cross-intel.mjs`
+### User systemd services
 
-### New tables
-**ops schema:**
-- `priorities` — shared priority stack (entities/topics all agents track)
-- `cross_signals` — cross-agent confirmations (entity seen by 2+ agents = amplified)
-- `reactions` — agent-to-agent response rules (trigger→responder, probabilistic)
+- **`metrics-collector.service`** — Collects CPU/memory stats every 30s for dashboard charts
+  ```bash
+  cat > ~/.config/systemd/user/metrics-collector.service << 'EOF'
+  [Unit]
+  Description=System metrics collector for agent dashboard
+  After=postgresql.service
 
-**memory schema:**
-- `entities` — knowledge graph nodes (people, companies, projects, tech)
-- `entity_relations` — typed relationships between entities (works_at, manages, etc.)
-- `compounds` — weekly memory synthesis from daily notes
-- `mistakes` — explicit error tracking with recurrence count + lessons
+  [Service]
+  Type=simple
+  ExecStart=/usr/bin/node $HOME/.openclaw/workspace/scripts/collect-metrics.mjs
+  Restart=always
+  RestartSec=10
 
-### Commands
-- `signal/confirm/priorities` — shared priority stack
-- `entity/relate/graph` — knowledge graph
-- `react-add/react-list/react-check` — reaction matrix
-- `mistake/mistakes` — error tracking
-- `sync` — daily cross-agent context summary
+  [Install]
+  WantedBy=default.target
+  EOF
+  systemctl --user daemon-reload && systemctl --user enable --now metrics-collector
+  ```
 
-### Seeded data
-- 4 project priorities (KDP P9, Boris P8, TaskBee P7, CRM P5)
-- 7 entities (Boss, Directannonces, Darie, Thomas, Sacha, Olga, OpenPeople CRM)
-- 4 relations (employment, project management)
-- 3 reaction rules (nefario→main on research, xreader→main on entity, main→main on error)
+### Crontab
 
----
+Set up cron jobs for backups and maintenance (edit with `crontab -e` or use `openclaw cron`):
 
-## Gmail / Calendar Integration ✅
-*Completed 10/02/2026*
-
-### How it works
-```
-Gmail → Google Pub/Sub → Tailscale Funnel → gog watch serve (:8788) → OpenClaw webhook hook → Kevin
-```
-
-### Components
-- **gog CLI** v0.9.0 — Google API CLI (Gmail, Calendar, Drive, etc.)
-- **Account:** your-agent@gmail.com
-- **GCP project:** `kevin-openclaw`
-- **OAuth:** Desktop app credentials, stored in `~/.config/gogcli/`
-- **Keyring:** File-based (`GOG_KEYRING_PASSWORD` env var in systemd unit)
-
-### Systemd service
-File: `~/.config/systemd/user/gog-gmail-watch.service`
-```ini
-[Unit]
-Description=gog Gmail watch (Pub/Sub → OpenClaw)
-After=network.target
-
-[Service]
-Environment=GOG_KEYRING_PASSWORD=<redacted>
-Environment=PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=/usr/bin/openclaw webhooks gmail run --account your-agent@gmail.com
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-```
-
-### Sending email (from Kevin)
 ```bash
-GOG_KEYRING_PASSWORD=<password> gog gmail send \
-  --account your-agent@gmail.com \
-  --to recipient@example.com \
-  --subject "Subject" \
-  --body "Body text" \
-  --no-input
-```
-
-### Status check
-```bash
-systemctl --user status gog-gmail-watch.service
-```
-
-### What works ✅
-- Receiving email notifications (real-time via Pub/Sub)
-- Sending email (via `gog gmail send`)
-
-### Not yet tested
-- Calendar notifications
-- Google Drive access
-
----
-
-## Cost Tracking ✅
-*Completed 10/02/2026*
-
-Tool: `tools/cost-tracker.mjs`
-- 8 subscriptions tracked in `ops.subscriptions`
-- Daily ECB FX rate for USD→EUR conversion
-- Hourly cost snapshots
-- **Monthly total:** €201.11 (€164.29 OpenClaw-related)
-
----
-
-## TTS / STT ✅
-- **TTS:** ElevenLabs, voice "The Elf" (id: e79twtVS2278lVZZQiAD)
-- **STT:** OpenAI Whisper API
-- Dedicated Telegram voice topic (thread 754)
-
----
-
-## Cron Jobs
-
-### System crontab (user: $USER)
-```bash
-# State backup — daily 02h00 UTC
+# Daily state backup at 02:00 UTC
 0 2 * * * tar czf $HOME/backups/openclaw/state-$(date +\%Y\%m\%d).tar.gz $HOME/.openclaw/ 2>/dev/null
-
-# Workspace backup + pg_dump — daily 03h00 UTC
+# Daily full backup at 03:00 UTC
 0 3 * * * $HOME/.openclaw/workspace/scripts/backup-openclaw.sh >> $HOME/backups/openclaw/backup.log 2>&1
-
-# Watchdog — every 2min
-*/2 * * * * /usr/local/bin/openclaw-watchdog.sh
-
-# Auto-update — daily 04h00 UTC
-0 4 * * * openclaw update && systemctl --user restart openclaw-gateway.service
-
-# Old backup cleanup — 14 days, daily 05h00 UTC
+# Weekly update check Monday 08:00 UTC
+0 8 * * 1 openclaw update check --channel telegram --chat -1003396419207 --topic 710
+# Cleanup old backups at 05:00 UTC
 0 5 * * * find $HOME/backups/openclaw/state-*.tar.gz -mtime +14 -delete 2>/dev/null
-
-# Log cleanup — daily 05h30 UTC
+# Log cleanup at 05:30 UTC
 30 5 * * * $HOME/.openclaw/workspace/scripts/cleanup-logs.sh >> $HOME/backups/openclaw/backup.log 2>&1
 ```
 
-### OpenClaw cron jobs
-- **Weekly update check:** Monday 08h00 UTC → Telegram topic 710
-- **Hourly cost snapshot:** :05 past each hour
-- **Daily FX rate:** 07:00 UTC (ECB)
+## Step 9: Set Up Gmail/Calendar (Optional)
 
----
+For email and calendar integration, see [gmail-pubsub-setup.md](gmail-pubsub-setup.md).
 
-## Pending / Blocked
-
-- [ ] Calendar notifications testing
-- [ ] Google Drive testing
-- [ ] `webhook.glubi.com` DNS (alternative to Tailscale Funnel)
-- [ ] `drop.glubi.com` DNS + Nginx file drop
-- [ ] Phase 6 — Mission Control Dashboard (Boss building)
-- [x] Phase 7 — Cross-Agent Intelligence ✅
-
----
+- **Account:** your-agent@gmail.com
+- **Option B (recommended):** Pub/Sub webhooks for push notifications
+- **Setup:** Requires Google Cloud project, OAuth credentials, Tailscale Funnel
 
 ## Troubleshooting
 
-### Gateway won't start
-```bash
-openclaw gateway status
-journalctl --user -u openclaw-gateway -n 50
-systemctl --user restart openclaw-gateway
-```
+- **Rate limits:** Configure fallbacks in OpenClaw config (`agents.defaults.model.fallbacks`)
+- **Postgres connection:** Ensure `pg_hba.conf` allows local peer auth or set password
+- **Memory recall fails:** Check `memory-sync.mjs` ran and embeddings exist in `memory.memories`
 
-### Gmail watch not working
-```bash
-systemctl --user status gog-gmail-watch
-systemctl --user restart gog-gmail-watch
-journalctl --user -u gog-gmail-watch -n 50
-```
+## Backup Strategy
 
-### Postgres
-```bash
-sudo systemctl status postgresql
-psql openclaw_db -c 'SELECT 1;'
-```
+- **Daily state:** Tarball of `.openclaw/` (config, internals)
+- **Daily full:** `pg_dump` + workspace files via `backup-openclaw.sh`
+- **Retention:** 14 daily + 4 weekly
+- **GitHub:** Your private workspace repo is a versioned backup of memory
 
-### Memory limits
-```bash
-systemctl --user show openclaw-gateway | grep Memory
-```
+## Next Steps
+
+- Install dashboard from `oclaw-ops` repo
+- Set up additional agents with `openclaw agents add`
+- Define custom workflows in `workflows/` (YAML)
+- See [HermitClaw Roadmap](hermitclaw/ROADMAP.md) for portable MacBook setup
 
 ---
 
-*This guide is updated as each phase is completed. Check git history for changes.*
+This guide grows with each deployment phase. Last updated for Postgres memory upgrade (Phase 7).
