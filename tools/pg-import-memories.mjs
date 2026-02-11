@@ -8,7 +8,7 @@ import { join } from 'path';
 import pg from 'pg';
 
 const { Pool } = pg;
-const WORKSPACE = process.env.OPENCLAW_WORKSPACE || '/home/shad/.openclaw/workspace';
+const WORKSPACE = process.env.OPENCLAW_WORKSPACE || process.env.HOME + '/.openclaw/workspace';
 const OPENAI_KEY = process.env.OPENAI_API_KEY || readApiKey();
 const DRY_RUN = process.argv.includes('--dry-run');
 const EMBEDDING_MODEL = 'text-embedding-3-small';
@@ -16,7 +16,7 @@ const EMBEDDING_DIM = 1536;
 
 function readApiKey() {
   try {
-    const creds = readFileSync('/home/shad/.openclaw/credentials/openai-api-key.json', 'utf8');
+    const creds = readFileSync(process.env.HOME + '/.openclaw/credentials/openai-api-key.json', 'utf8');
     const parsed = JSON.parse(creds);
     return parsed.apiKey || parsed.token || parsed.key;
   } catch {

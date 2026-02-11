@@ -4,7 +4,7 @@
 import { execSync } from 'child_process';
 import pg from 'pg';
 
-const pool = new pg.Pool({ host: '/var/run/postgresql', database: 'openclaw_db', user: 'shad' });
+const pool = new pg.Pool({ host: '/var/run/postgresql', database: 'openclaw_db', user: process.env.USER });
 
 async function collect() {
   try {

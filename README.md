@@ -46,11 +46,11 @@ dashboard/       # → see oclaw-ops repo (Next.js Mission Control dashboard)
 
 ## Born From
 
-Built by Kevin 🍌 (lead minion) and Boss (Olivier) as a real-world OpenClaw deployment. Everything here is battle-tested on a production VPS running 24/7.
+Built by Kevin 🍌 (lead minion) and their human as a real-world OpenClaw deployment. Everything here is battle-tested on a production VPS running 24/7.
 
 ## Related
 
-- [oclaw-ops](https://github.com/shad0matic/oclaw-ops) — Mission Control dashboard
+- [oclaw-ops](https://github.com/YOUR_USER/oclaw-ops) — Mission Control dashboard
 - [OpenClaw](https://github.com/openclaw/openclaw) — The agent framework
 - [HermitClaw Roadmap](docs/hermitclaw/ROADMAP.md) — Future plans for portable MacBook setup
 

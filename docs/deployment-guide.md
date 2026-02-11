@@ -102,8 +102,8 @@ MemorySwapMax=0
 ### Install (bare metal, not Docker)
 ```bash
 sudo apt install -y postgresql-18 postgresql-18-pgvector
-sudo -u postgres createuser --superuser shad
-sudo -u postgres createdb openclaw_db -O shad
+sudo -u postgres createuser --superuser $USER
+sudo -u postgres createdb openclaw_db -O $USER
 psql openclaw_db -c 'CREATE EXTENSION vector;'
 ```
 
@@ -111,8 +111,8 @@ psql openclaw_db -c 'CREATE EXTENSION vector;'
 - **Postgres 18.1** bare metal, localhost only
 - **pgvector 0.8.1** for embeddings
 - **Single DB:** `openclaw_db` with two schemas (`memory` + `ops`)
-- **Auth:** Unix socket peer auth (no password needed for local user `shad`)
-- **Connection:** `postgresql://shad@localhost:5432/openclaw_db` via `/var/run/postgresql`
+- **Auth:** Unix socket peer auth (no password needed for local user)
+- **Connection:** `postgresql://$USER@localhost:5432/openclaw_db` via `/var/run/postgresql`
 
 ### Schemas
 **memory schema:** `memories`, `daily_notes`, `agent_profiles`
@@ -168,8 +168,8 @@ Tool: `tools/agent-levels.mjs`
 ## Phase 6 — Mission Control Dashboard 🚧
 *In progress — Boss vibe-coding in Cursor*
 
-- **Repo:** `github.com/shad0matic/oclaw-ops`
-- **Local path:** `/home/shad/projects/oclaw-ops/`
+- **Repo:** `github.com/YOUR_USER/oclaw-ops`
+- **Local path:** `$HOME/projects/oclaw-ops/`
 - **Stack:** Next.js + Prisma + Tailwind + shadcn/ui
 - **Spec:** `SPEC.md` in repo root
 - **Access:** Tailscale only, no auth
@@ -218,7 +218,7 @@ Gmail → Google Pub/Sub → Tailscale Funnel → gog watch serve (:8788) → Op
 
 ### Components
 - **gog CLI** v0.9.0 — Google API CLI (Gmail, Calendar, Drive, etc.)
-- **Account:** kevin.ovilclaw@gmail.com
+- **Account:** your-agent@gmail.com
 - **GCP project:** `kevin-openclaw`
 - **OAuth:** Desktop app credentials, stored in `~/.config/gogcli/`
 - **Keyring:** File-based (`GOG_KEYRING_PASSWORD` env var in systemd unit)
@@ -233,7 +233,7 @@ After=network.target
 [Service]
 Environment=GOG_KEYRING_PASSWORD=<redacted>
 Environment=PATH=/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=/usr/bin/openclaw webhooks gmail run --account kevin.ovilclaw@gmail.com
+ExecStart=/usr/bin/openclaw webhooks gmail run --account your-agent@gmail.com
 Restart=always
 RestartSec=10
 
@@ -244,7 +244,7 @@ WantedBy=default.target
 ### Sending email (from Kevin)
 ```bash
 GOG_KEYRING_PASSWORD=<password> gog gmail send \
-  --account kevin.ovilclaw@gmail.com \
+  --account your-agent@gmail.com \
   --to recipient@example.com \
   --subject "Subject" \
   --body "Body text" \
@@ -286,13 +286,13 @@ Tool: `tools/cost-tracker.mjs`
 
 ## Cron Jobs
 
-### System crontab (user: shad)
+### System crontab (user: $USER)
 ```bash
 # State backup — daily 02h00 UTC
-0 2 * * * tar czf /home/shad/backups/openclaw/state-$(date +\%Y\%m\%d).tar.gz /home/shad/.openclaw/ 2>/dev/null
+0 2 * * * tar czf $HOME/backups/openclaw/state-$(date +\%Y\%m\%d).tar.gz $HOME/.openclaw/ 2>/dev/null
 
 # Workspace backup + pg_dump — daily 03h00 UTC
-0 3 * * * /home/shad/.openclaw/workspace/scripts/backup-openclaw.sh >> /home/shad/backups/openclaw/backup.log 2>&1
+0 3 * * * $HOME/.openclaw/workspace/scripts/backup-openclaw.sh >> $HOME/backups/openclaw/backup.log 2>&1
 
 # Watchdog — every 2min
 */2 * * * * /usr/local/bin/openclaw-watchdog.sh
@@ -301,10 +301,10 @@ Tool: `tools/cost-tracker.mjs`
 0 4 * * * openclaw update && systemctl --user restart openclaw-gateway.service
 
 # Old backup cleanup — 14 days, daily 05h00 UTC
-0 5 * * * find /home/shad/backups/openclaw/state-*.tar.gz -mtime +14 -delete 2>/dev/null
+0 5 * * * find $HOME/backups/openclaw/state-*.tar.gz -mtime +14 -delete 2>/dev/null
 
 # Log cleanup — daily 05h30 UTC
-30 5 * * * /home/shad/.openclaw/workspace/scripts/cleanup-logs.sh >> /home/shad/backups/openclaw/backup.log 2>&1
+30 5 * * * $HOME/.openclaw/workspace/scripts/cleanup-logs.sh >> $HOME/backups/openclaw/backup.log 2>&1
 ```
 
 ### OpenClaw cron jobs

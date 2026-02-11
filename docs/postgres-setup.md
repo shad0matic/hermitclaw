@@ -3,7 +3,7 @@
 **Created:** 10/02/2026
 **PG Version:** 18.1 | **pgvector:** 0.8.1
 **Host:** localhost (unix socket `/var/run/postgresql`)
-**DB:** `openclaw_db` | **User:** `shad` (peer auth)
+**DB:** `openclaw_db` | **User:** `$USER` (peer auth)
 
 ---
 

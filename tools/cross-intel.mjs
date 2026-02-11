@@ -49,7 +49,7 @@ import { parseArgs } from 'node:util';
 const pool = new pg.Pool({
   host: '/var/run/postgresql',
   database: 'openclaw_db',
-  user: 'shad',
+  user: process.env.USER,
 });
 
 const args = process.argv.slice(2);

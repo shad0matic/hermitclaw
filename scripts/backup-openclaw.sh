@@ -5,8 +5,8 @@
 
 set -euo pipefail
 
-BACKUP_DIR="/home/shad/backups/openclaw"
-OPENCLAW_DIR="/home/shad/.openclaw"
+BACKUP_DIR="${HOME}/backups/openclaw"
+OPENCLAW_DIR="${HOME}/.openclaw"
 DATE=$(date +%Y-%m-%d)
 DAY_OF_WEEK=$(date +%u)  # 7 = Sunday
 BACKUP_FILE="$BACKUP_DIR/openclaw-$DATE.tar.gz"
@@ -32,7 +32,7 @@ tar czf "$BACKUP_FILE" \
     --exclude="$OPENCLAW_DIR/media/outbound" \
     --exclude="$OPENCLAW_DIR/canvas" \
     --exclude="$OPENCLAW_DIR/completions" \
-    -C /home/shad \
+    -C "$HOME" \
     .openclaw/openclaw.json \
     .openclaw/workspace \
     .openclaw/agents \
