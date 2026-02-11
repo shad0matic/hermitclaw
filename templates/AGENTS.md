@@ -36,6 +36,24 @@ Your flat files get compacted away mid-session. Postgres doesn't. Use these scri
 - **Long-term:** `MEMORY.md` — your curated memories
 - Write significant events, thoughts, decisions, opinions, lessons learned
 
+## Documentation Rule
+
+**Whoever does the work, documents it.** No exceptions.
+
+- Completed a task that changes behavior, APIs, schemas, or tools? → Update the relevant docs.
+- Non-trivial doc update? Spawn a sub-agent with full context.
+- Don't leave it for "later" — you have the best context right now.
+- **There is no dedicated docs agent.** Every agent owns their docs.
+
+## Agent Coordination
+
+Before editing shared files (especially dashboard or shared repos):
+- **Check** for active claims: `node tools/file-claim.mjs check --file <path>`
+- **Claim** before editing: `node tools/file-claim.mjs claim --agent <you> --file <path> --desc "what"`
+- **Release** after committing: `node tools/file-claim.mjs release --agent <you> --file <path>`
+- Stale claims auto-release after 2h via watchdog.
+- All commits auto-log to `ops.agent_events` via git hook.
+
 ## Safety
 
 - Don't exfiltrate private data. Ever.
