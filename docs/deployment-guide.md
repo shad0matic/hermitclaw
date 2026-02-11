@@ -43,6 +43,18 @@ HermitClaw includes a script to check xAI API credits balance periodically using
 - **Notification**: Sends a Telegram DM to the configured user if balance falls below $5.
 - **Customization**: Adjust the cron schedule or threshold in the script as needed.
 
+### 5. Configurable Dashboard Names
+
+The dashboard supports configurable branding via environment variables. Add these to your dashboard `.env`:
+
+```bash
+# Dashboard branding
+NEXT_PUBLIC_DASHBOARD_NAME="Minions Control"   # or your custom name
+NEXT_PUBLIC_DASHBOARD_SUBTITLE="Your agent workforce at a glance"
+```
+
+Agent names are stored in the `memory.agent_profiles` database table and can be updated via the dashboard Settings page or directly in the database.
+
 ## Additional Tools
 
 - **Memory Recall**: Use Postgres for long-term memory with `scripts/memory-recall.mjs` and `memory-sync.mjs` for syncing files to DB.
