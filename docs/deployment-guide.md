@@ -58,8 +58,11 @@ WantedBy=multi-user.target
 
 ```bash
 sudo cp -r ~/.openclaw /home/openclaw/
+sudo chown openclaw:openclaw /home/openclaw
 sudo chown -R openclaw:openclaw /home/openclaw/.openclaw
 ```
+
+> **Note:** The `adduser --system` command may leave `/home/openclaw` owned by root. The second `chown` line fixes this.
 
 #### 4. Enable and start
 
