@@ -13,12 +13,83 @@ This guide provides instructions for deploying HermitClaw, a portable, self-host
 ## Quick Start
 
 1. **Install OpenClaw**: Follow the official OpenClaw installation guide.
-2. **Set up Postgres**: Install Postgres 18+ and enable pgvector.
-3. **Run Schema Setup**: Execute the schema setup scripts from `docs/postgres-setup.md`.
-4. **Copy Templates**: Copy configuration templates to your workspace.
-5. **Configure Tools**: Set up API keys and environment variables.
+2. **Set up OpenClaw Gateway as systemd service**: See [Gateway Persistence Setup](#gateway-persistence-setup-linux-vps) below.
+3. **Set up Postgres**: Install Postgres 18+ and enable pgvector.
+4. **Run Schema Setup**: Execute the schema setup scripts from `docs/postgres-setup.md`.
+5. **Copy Templates**: Copy configuration templates to your workspace.
+6. **Configure Tools**: Set up API keys and environment variables.
 
 ## Detailed Deployment Steps
+
+### Gateway Persistence Setup (Linux VPS)
+
+Running OpenClaw gateway as a user process causes "device token mismatch" errors on restart. For production VPS deployments, run it as a **systemd system service**.
+
+#### 1. Create a dedicated user
+
+```bash
+sudo adduser --system --group openclaw
+```
+
+#### 2. Create the systemd service file
+
+Create `/etc/systemd/system/openclaw-gateway.service`:
+
+```ini
+[Unit]
+Description=OpenClaw Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openclaw
+Group=openclaw
+ExecStart=/usr/local/bin/openclaw gateway
+Restart=always
+RestartSec=5
+Environment="HOME=/home/openclaw"
+
+[Install]
+WantedBy=multi-user.target
+```
+
+#### 3. Move config and set permissions
+
+```bash
+sudo cp -r ~/.openclaw /home/openclaw/
+sudo chown -R openclaw:openclaw /home/openclaw/.openclaw
+```
+
+#### 4. Enable and start
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now openclaw-gateway.service
+```
+
+#### 5. Verify
+
+```bash
+sudo systemctl status openclaw-gateway.service
+sudo journalctl -u openclaw-gateway.service -f
+```
+
+#### Multiple Profiles
+
+For additional profiles (e.g., separate user), create a second service with `--profile <name>`:
+
+```ini
+ExecStart=/usr/local/bin/openclaw --profile <name> gateway
+```
+
+And move the profile directory:
+```bash
+sudo cp -r ~/.openclaw-<name> /home/openclaw/
+sudo chown -R openclaw:openclaw /home/openclaw/.openclaw-<name>
+```
+
+---
 
 ### 1. Postgres Setup
 
