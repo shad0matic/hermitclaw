@@ -143,7 +143,7 @@ After=network.target postgresql.service
 Type=simple
 User=openclaw
 WorkingDirectory=/home/openclaw/projects/oclaw-ops/dashboard
-ExecStart=/usr/bin/npm start
+ExecStart=/usr/bin/npm start -- -H 127.0.0.1
 Restart=always
 RestartSec=5
 Environment=NODE_ENV=production
@@ -157,6 +157,8 @@ sudo systemctl daemon-reload
 sudo systemctl enable oclaw-dashboard
 sudo systemctl start oclaw-dashboard
 ```
+
+> **Important:** The `-H 127.0.0.1` flag binds Next.js to localhost only, avoiding port conflicts with Tailscale serve which binds to the Tailscale interface.
 
 #### 5. Expose via Tailscale
 
@@ -196,6 +198,49 @@ sudo systemctl daemon-reload
 sudo systemctl enable tailscale-serve-dashboard
 sudo systemctl start tailscale-serve-dashboard
 ```
+
+#### 7. Metrics WebSocket Server (Real-time monitoring)
+
+The status bar uses WebSocket for real-time system metrics (CPU, RAM, load). This requires a separate WebSocket server.
+
+**Install dependencies:**
+```bash
+cd ~/projects/oclaw-ops
+npm install ws systeminformation
+```
+
+**Create systemd service:**
+```bash
+sudo tee /etc/systemd/system/oclaw-metrics-ws.service << 'EOF'
+[Unit]
+Description=MC Dashboard Metrics WebSocket Server
+After=network.target
+
+[Service]
+Type=simple
+User=openclaw
+WorkingDirectory=/home/openclaw/projects/oclaw-ops
+ExecStart=/usr/bin/node tools/metrics-ws.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable oclaw-metrics-ws
+sudo systemctl start oclaw-metrics-ws
+```
+
+**Expose via Tailscale (port 3101):**
+```bash
+sudo tailscale serve --bg --https=3101 http://127.0.0.1:3101
+```
+
+The dashboard connects to `wss://your-vps.tail12345.ts.net:3101` for live metrics.
+
+> **Note:** The WS server binds to `0.0.0.0:3101`. The dashboard's status-bar.tsx expects port 3101 — if you change this, update the component.
 
 ---
 
