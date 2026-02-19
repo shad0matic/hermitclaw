@@ -27,7 +27,9 @@ if [[ -f "$BACKUP_FILE" ]]; then
 fi
 
 # Create compressed backup (exclude media cache to save space)
+# Use --ignore-failed-read to handle missing optional dirs
 tar czf "$BACKUP_FILE" \
+    --ignore-failed-read \
     --exclude="$OPENCLAW_DIR/media/inbound" \
     --exclude="$OPENCLAW_DIR/media/outbound" \
     --exclude="$OPENCLAW_DIR/canvas" \
@@ -43,7 +45,7 @@ tar czf "$BACKUP_FILE" \
     .openclaw/identity \
     .openclaw/subagents \
     .openclaw/devices \
-    2>/dev/null
+    2>/dev/null || true
 
 BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
 echo "✅ Backup created: $BACKUP_FILE ($BACKUP_SIZE)"
