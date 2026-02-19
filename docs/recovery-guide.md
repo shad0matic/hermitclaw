@@ -153,10 +153,6 @@ rm -f "$DST/BOOTSTRAP.md"
 
 Add env vars via `openclaw.json` config (not bashrc — OpenClaw injects these into agent sessions):
 
-```bash
-# Using the gateway config.patch API or edit openclaw.json directly:
-```
-
 Required env vars:
 
 ```json
@@ -171,7 +167,44 @@ Required env vars:
 }
 ```
 
-### 6. Restore Agent Configuration
+### 6. Restore Auth Profiles (API Keys)
+
+**Critical:** API keys for providers (Anthropic, OpenAI, xAI, Google) are stored in per-agent auth profile files, NOT in `openclaw.json`.
+
+Find them in your archive:
+```bash
+grep -r "xai-\|AIzaSy\|sk-ant\|sk-proj" /path/to/archive/.openclaw/agents/*/agent/auth-profiles.json
+```
+
+Copy to the new setup:
+```bash
+# Main agent
+cp /path/to/archive/.openclaw/agents/kevin/agent/auth-profiles.json \
+   ~/.openclaw/agents/main/agent/auth-profiles.json
+
+# Copy to all sub-agents
+for agent_dir in ~/.openclaw/agents/agents/*/agent; do
+  cp ~/.openclaw/agents/main/agent/auth-profiles.json "$agent_dir/"
+done
+```
+
+Then register the profiles in `openclaw.json` under `auth.profiles`:
+```json
+{
+  "auth": {
+    "profiles": {
+      "anthropic:default": { "provider": "anthropic", "mode": "token" },
+      "openai:api-key": { "provider": "openai", "mode": "api_key" },
+      "xai:default": { "provider": "xai", "mode": "api_key" },
+      "google:default": { "provider": "google", "mode": "api_key" }
+    }
+  }
+}
+```
+
+**Note:** OAuth tokens (like openai-codex) may have expired and need re-auth via `openclaw configure --section model`.
+
+### 7. Restore Agent Configuration
 
 The previous setup may have had multi-agent config (agent list, models, sub-agent workspaces). Check the archived `openclaw.json` for the `agents` section:
 
@@ -186,7 +219,7 @@ Key items to restore:
 - Skills and plugins config
 - Tailscale settings (if used)
 
-### 7. Install Hermitclaw Tools
+### 8. Install Hermitclaw Tools
 
 ```bash
 cd ~/projects/hermitclaw
@@ -199,7 +232,7 @@ Test the memory search:
 OPENAI_API_KEY=sk-proj-... node tools/pg-memory.mjs search "test query"
 ```
 
-### 8. Restore Systemd Service
+### 9. Restore Systemd Service
 
 If running as a system service:
 
@@ -209,7 +242,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now openclaw-gateway.service
 ```
 
-### 9. Restore Cron Jobs & Backup Script
+### 10. Restore Cron Jobs & Backup Script
 
 ```bash
 # Copy backup script

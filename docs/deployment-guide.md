@@ -45,7 +45,7 @@ Wants=network-online.target
 Type=simple
 User=openclaw
 Group=openclaw
-ExecStart=/usr/local/bin/openclaw gateway
+ExecStart=/usr/bin/openclaw gateway
 Restart=always
 RestartSec=5
 Environment="HOME=/home/openclaw"
@@ -83,7 +83,7 @@ sudo journalctl -u openclaw-gateway.service -f
 For additional profiles (e.g., separate user), create a second service with `--profile <name>`:
 
 ```ini
-ExecStart=/usr/local/bin/openclaw --profile <name> gateway
+ExecStart=/usr/bin/openclaw --profile <name> gateway
 ```
 
 And move the profile directory:
@@ -102,13 +102,45 @@ Ensure Postgres is installed and pgvector is enabled. Run the provided SQL scrip
 
 Configure your workspace with necessary environment variables and API keys. Use the templates provided in `templates/` directory.
 
-### 3. Agent Coordination
+### 3. Auth Profiles (API Keys)
+
+Provider API keys are stored in **per-agent auth profile files**, not in `openclaw.json`:
+
+```
+~/.openclaw/agents/main/agent/auth-profiles.json      # Main agent
+~/.openclaw/agents/agents/<id>/agent/auth-profiles.json  # Sub-agents
+```
+
+**Structure:**
+```json
+{
+  "version": 1,
+  "profiles": {
+    "anthropic:default": { "type": "token", "provider": "anthropic", "token": "sk-ant-..." },
+    "openai:api-key": { "type": "api_key", "provider": "openai", "key": "sk-proj-..." },
+    "xai:default": { "type": "api_key", "provider": "xai", "key": "xai-..." },
+    "google:default": { "type": "api_key", "provider": "google", "key": "AIza..." }
+  },
+  "lastGood": {
+    "anthropic": "anthropic:default",
+    "openai": "openai:api-key"
+  }
+}
+```
+
+**Setup:**
+1. Run `openclaw configure --section model` to add providers interactively, OR
+2. Copy `auth-profiles.json` from an existing agent to new agents
+
+**Important:** When adding sub-agents, copy the auth-profiles.json to their agent dirs so they inherit API access.
+
+### 4. Agent Coordination
 
 - **File Claims**: Use `ops.file_claims` table for file locking between agents to avoid edit conflicts. CLI tool `tools/file-claim.mjs` provides `claim`, `release`, `check`, and `active` commands.
 - **Git Hooks**: A shared git post-commit hook (`scripts/git-post-commit-hook.sh`) logs commits to `ops.agent_events`. Symlink this to all repos for activity tracking.
 - **Task Watchdog**: Enhanced to release stale claims (>2h) and detect stalled spawned agents.
 
-### 4. xAI Balance Check (Optional)
+### 5. xAI Balance Check (Optional)
 
 HermitClaw includes a script to check xAI API credits balance periodically using a management key. This is useful for monitoring credit usage to prevent service interruption.
 
@@ -117,7 +149,7 @@ HermitClaw includes a script to check xAI API credits balance periodically using
 - **Notification**: Sends a Telegram DM to the configured user if balance falls below $5.
 - **Customization**: Adjust the cron schedule or threshold in the script as needed.
 
-### 5. Configurable Dashboard Names
+### 6. Configurable Dashboard Names
 
 The dashboard supports configurable branding via environment variables. Add these to your dashboard `.env`:
 
