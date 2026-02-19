@@ -94,6 +94,111 @@ sudo chown -R openclaw:openclaw /home/openclaw/.openclaw-<name>
 
 ---
 
+### MC Dashboard Setup
+
+The Minions Control (MC) Dashboard provides a web UI for monitoring agents, tasks, costs, and system health.
+
+#### 1. Clone and configure
+
+```bash
+cd ~/projects
+git clone https://github.com/shad0matic/oclaw-ops.git
+cd oclaw-ops/dashboard
+
+# Create .env with database connection
+cat > .env << 'EOF'
+DATABASE_URL="postgresql://openclaw@localhost:5432/openclaw_db?host=%2Fvar%2Frun%2Fpostgresql&schema=public"
+OPENCLAW_GW_TOKEN="your-gateway-token-here"
+GEMINI_API_KEY="your-gemini-key-or-placeholder"
+EOF
+```
+
+> **Note:** Get `OPENCLAW_GW_TOKEN` from `~/.openclaw/openclaw.json` under `gateway.auth.token`. GEMINI_API_KEY is optional (used for knowledge extraction).
+
+#### 2. Fix paths if migrating from another user
+
+If you cloned from a setup using a different username (e.g., `shad`), update hardcoded paths:
+
+```bash
+find src -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i 's|/home/shad|/home/openclaw|g' {} \;
+sed -i "s|user: 'shad'|user: 'openclaw'|g" src/lib/drizzle.ts
+```
+
+#### 3. Build
+
+```bash
+npm install
+npm run build
+```
+
+#### 4. Create systemd service
+
+```bash
+sudo tee /etc/systemd/system/oclaw-dashboard.service << 'EOF'
+[Unit]
+Description=MC Dashboard
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=openclaw
+WorkingDirectory=/home/openclaw/projects/oclaw-ops/dashboard
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable oclaw-dashboard
+sudo systemctl start oclaw-dashboard
+```
+
+#### 5. Expose via Tailscale
+
+```bash
+sudo tailscale serve --https=3000 http://127.0.0.1:3000
+```
+
+Tailscale serve config persists across reboots. Verify with:
+```bash
+tailscale serve status
+```
+
+Dashboard is now available at: `https://your-vps.tail12345.ts.net:3000`
+
+#### 6. (Optional) Tailscale serve as systemd service
+
+If Tailscale serve doesn't persist (rare), create a service:
+
+```bash
+sudo tee /etc/systemd/system/tailscale-serve-dashboard.service << 'EOF'
+[Unit]
+Description=Tailscale Serve for MC Dashboard
+After=tailscaled.service oclaw-dashboard.service
+Wants=oclaw-dashboard.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/tailscale serve --https=3000 http://127.0.0.1:3000
+ExecStop=/usr/bin/tailscale serve --https=3000 off
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable tailscale-serve-dashboard
+sudo systemctl start tailscale-serve-dashboard
+```
+
+---
+
 ### 1. Postgres Setup
 
 Ensure Postgres is installed and pgvector is enabled. Run the provided SQL scripts to set up necessary schemas (`memory` and `ops`).
