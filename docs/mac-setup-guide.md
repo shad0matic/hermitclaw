@@ -1,12 +1,13 @@
 # HermitClaw Mac Setup Guide
 
-**Time:** ~1 hour for full setup | **Difficulty:** Beginner-friendly
+**Time:** ~1 hour for full setup | **Difficulty:** Beginner-friendly | **Last updated:** February 2026
 
 ---
 
 ## Contents
 
 - [What is OpenClaw?](#what-is-openclaw)
+- [Reading Order](#reading-order)
 - [Part 1: Core Setup (Steps 1–8)](#part-1-core-setup-steps-18)
 - [Part 2: Enhanced Setup (Steps 9–12)](#part-2-enhanced-setup-steps-912)
 - [Verify Your Setup](#verify-your-setup)
@@ -106,7 +107,7 @@ npm install -g openclaw
 
 Verify:
 ```bash
-openclaw --version
+openclaw --version  # Should show openclaw/x.x.x
 ```
 
 ---
@@ -196,9 +197,9 @@ Type `exit` or Ctrl+C to quit.
 
 ## Part 2: Enhanced Setup (Steps 9–12)
 
-Add Telegram, memory, and monitoring.
+Add Telegram, memory, and monitoring. **~45 minutes.**
 
-> **Disk space:** Full setup (Steps 9-12) requires ~2GB of free space.
+> **Disk space:** Full setup (Steps 9–12) requires ~2GB of free space.
 
 ---
 
@@ -360,8 +361,8 @@ After completing all steps, confirm everything works:
 | ✓ Gateway running | `openclaw status` shows "running" |
 | ✓ CLI chat works | `openclaw chat` responds to messages |
 | ✓ Telegram works | Your bot responds in Telegram *(if configured)* |
-| ✓ Postgres running | `brew services list` shows postgresql "started" |
-| ✓ Dashboard loads | [localhost:3000](http://localhost:3000) shows MC Dashboard |
+| ✓ Postgres running | `brew services list` shows postgresql "started" *(if configured)* |
+| ✓ Dashboard loads | [localhost:3000](http://localhost:3000) shows MC Dashboard *(if configured)* |
 
 If any check fails, see [Troubleshooting](#troubleshooting) below.
 
