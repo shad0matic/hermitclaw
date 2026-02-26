@@ -10,6 +10,8 @@ OpenClaw is an AI agent that runs on your machine. You chat with it via Telegram
 
 HermitClaw adds infrastructure on top: Postgres memory, multi-agent coordination, cost tracking, and a dashboard.
 
+> **Privacy:** Your agent runs locally — your data stays on your machine. You control what it can access.
+
 **By the end of this guide, you'll have a fully working AI agent with visual monitoring.**
 
 ---
@@ -143,7 +145,7 @@ You should see a success message indicating the gateway has started.
 ```json
 {
   "gateway": {
-    "port": 4123
+    "port": 5000
   }
 }
 ```
@@ -180,6 +182,8 @@ Add Telegram, memory, and monitoring.
 ### Step 9: Connect Telegram (Recommended)
 
 Talking via CLI works, but Telegram is more convenient — chat from your phone, get notifications, and organize conversations by topic.
+
+> **Don't use Telegram?** Skip to Step 10 — CLI chat works fine, and you can configure Discord or other channels later via `openclaw configure`.
 
 #### 9a: Create a Telegram Bot
 
@@ -305,7 +309,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. You should 
 npm run dev -- -p 3001
 ```
 
-> **Note:** This runs in development mode (stops when you close terminal). For production/remote access, see [deployment-guide.md](deployment-guide.md).
+> **Note:** This runs in development mode. Press `Ctrl+C` to stop. For production/remote access, see [deployment-guide.md](deployment-guide.md).
 
 ---
 
@@ -519,7 +523,7 @@ npm install
 cd ~/oclaw-ops/dashboard
 git pull
 npm install
-npm run build  # if running in production mode
+# Then restart with: npm run dev
 ```
 
 ---
@@ -551,6 +555,13 @@ Your API provider needs billing set up, or you've hit limits. Check your provide
 
 ### Postgres connection errors
 Make sure Postgres is running: `brew services list`
+
+### "role does not exist" when creating database
+Your Postgres user doesn't match your macOS username. Create it:
+```bash
+createuser -s $(whoami)
+```
+Then retry `createdb openclaw_db`.
 
 ### Gateway crashes on restart
 Check logs: `openclaw gateway logs` or `~/.openclaw/logs/`
