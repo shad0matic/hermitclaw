@@ -4,6 +4,22 @@
 
 ---
 
+## Contents
+
+- [What is OpenClaw?](#what-is-openclaw)
+- [Part 1: Core Setup (Steps 1–8)](#part-1-core-setup-steps-18)
+- [Part 2: Enhanced Setup (Steps 9–12)](#part-2-enhanced-setup-steps-912)
+- [Verify Your Setup](#verify-your-setup)
+- [What Can You Do With This?](#what-can-you-do-with-this)
+- [Understanding Your Workspace](#understanding-your-workspace)
+- [Cost Management](#cost-management)
+- [Quick Reference](#quick-reference)
+- [Updating](#updating)
+- [Troubleshooting](#troubleshooting)
+- [Next Steps](#next-steps)
+
+---
+
 ## What is OpenClaw?
 
 OpenClaw is an AI agent that runs on your machine. You chat with it via Telegram, Discord, CLI, or other channels. It can read files, run commands, search the web, and remember things across sessions.
@@ -258,7 +274,7 @@ psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
 Then restart the gateway: `openclaw gateway restart`
 
 **Set up the schema** (required for memory and cost tracking):
-See `postgres-setup.md` for the full schema SQL. At minimum, run the "Essential Tables" section to enable memory and cost logging.
+See [postgres-setup.md](postgres-setup.md) for the full schema SQL. At minimum, run the "Essential Tables" section to enable memory and cost logging.
 
 ---
 
@@ -288,7 +304,7 @@ cp -i templates/* ~/.openclaw/workspace/
 
 ### Step 12: Install Dashboard (Recommended)
 
-The MC Dashboard gives you visual monitoring: agent activity, costs, system health.
+The **Minions Control (MC) Dashboard** gives you visual monitoring: agent activity, costs, system health.
 
 ```bash
 cd ~
@@ -343,7 +359,7 @@ After completing all steps, confirm everything works:
 |-------|---------------|
 | ✓ Gateway running | `openclaw status` shows "running" |
 | ✓ CLI chat works | `openclaw chat` responds to messages |
-| ✓ Telegram works | Your bot responds in Telegram |
+| ✓ Telegram works | Your bot responds in Telegram *(if configured)* |
 | ✓ Postgres running | `brew services list` shows postgresql "started" |
 | ✓ Dashboard loads | [localhost:3000](http://localhost:3000) shows MC Dashboard |
 
