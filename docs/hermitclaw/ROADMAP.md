@@ -138,7 +138,7 @@ Ideas from ClawCity, RentAHuman.ai, @ericosiu, @Voxyz_ai.
 ## Documentation Strategy
 Every phase documented step-by-step for:
 - Friends who want to replicate the setup
-- Sacha (14yo) learning tech
+- a teenager learning tech
 - Future open-source release (hermitclaw.com)
 
 Based on our VPS experience (docs/deployment-guide.md), adapted for macOS.

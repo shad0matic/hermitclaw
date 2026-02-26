@@ -12,30 +12,30 @@ You can run multiple isolated OpenClaw instances on a single server, each with:
 - Separate Telegram bot
 - Different port
 
-## Example: Olga's Instance
+## Example: secondary's Instance
 
 ```
-~/.openclaw-olga/
+~/.openclaw-secondary/
 ├── openclaw.json          # Config (port 18790)
 ├── workspace/             # Her workspace
-├── agents/                # Her agents (main, psy, pm-openpeople)
+├── agents/                # Her agents (main, psy, project-assistant)
 ├── credentials/
 └── ...
 ```
 
 ## Systemd Service
 
-`/etc/systemd/system/openclaw-olga.service`:
+`/etc/systemd/system/openclaw-secondary.service`:
 ```ini
 [Unit]
-Description=OpenClaw Gateway (Olga)
+Description=OpenClaw Gateway (secondary)
 After=network-online.target
 
 [Service]
 Type=simple
 User=openclaw
 Group=openclaw
-ExecStart=/usr/bin/openclaw --profile olga gateway
+ExecStart=/usr/bin/openclaw --profile secondary gateway
 Restart=always
 RestartSec=5
 Environment="HOME=/home/openclaw"

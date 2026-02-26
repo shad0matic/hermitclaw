@@ -256,25 +256,25 @@ crontab -e
 
 ---
 
-## Restoring a Second Instance (e.g. Olga)
+## Restoring a Second Instance (e.g. secondary)
 
 If running multiple OpenClaw profiles on the same server:
 
-1. The second instance uses a separate config directory (e.g. `~/.openclaw-olga/`)
+1. The second instance uses a separate config directory (e.g. `~/.openclaw-secondary/`)
 2. It runs on a different port (e.g. 18790 vs 18789)
 3. It has its own Telegram bot token
 4. Create a separate systemd service:
 
 ```ini
 [Unit]
-Description=OpenClaw Gateway (Olga)
+Description=OpenClaw Gateway (secondary)
 After=network-online.target
 
 [Service]
 Type=simple
 User=openclaw
 Group=openclaw
-ExecStart=/usr/local/bin/openclaw --profile olga gateway
+ExecStart=/usr/local/bin/openclaw --profile secondary gateway
 Restart=always
 RestartSec=5
 Environment="HOME=/home/openclaw"
@@ -283,9 +283,9 @@ Environment="HOME=/home/openclaw"
 WantedBy=multi-user.target
 ```
 
-5. Restore workspace files to `~/.openclaw-olga/workspace/`
-6. Restore agent directories to `~/.openclaw-olga/agents/`
-7. Update `openclaw.json` paths from `/home/shad/.openclaw-olga/` to `/home/openclaw/.openclaw-olga/`
+5. Restore workspace files to `~/.openclaw-secondary/workspace/`
+6. Restore agent directories to `~/.openclaw-secondary/agents/`
+7. Update `openclaw.json` paths from `/home/youruser/.openclaw-secondary/` to `/home/openclaw/.openclaw-secondary/`
 
 ---
 
