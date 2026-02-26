@@ -36,7 +36,7 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 # === AI Providers ===
 ANTHROPIC_API_KEY=sk-ant-xxx
 OPENAI_API_KEY=sk-proj-xxx
-GOOGLE_API_KEY=AIzaSyxxx
+GOOGLE_API_KEY=AIzaSyxxx        # Also used for Gemini
 XAI_API_KEY=xai-xxx
 
 # === Search ===
