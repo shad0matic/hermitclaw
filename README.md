@@ -25,6 +25,7 @@ dashboard/       # → see oclaw-ops repo (Next.js Mission Control dashboard)
 - **System Metrics** — 24h rolling buffer for dashboard charts
 - **Agent Coordination** — File claim system to prevent multi-agent edit conflicts, git commit tracking, and task event logging to Postgres
 - **Backup & Reliability** — Automated daily backups, systemd services, log rotation
+- **Compact Context** — Token-efficient JSON summaries per scope (topic/project/task) with auto-refresh ([docs](docs/compact-context.md))
 
 ## Quick Start
 
