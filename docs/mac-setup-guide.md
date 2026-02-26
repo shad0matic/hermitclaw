@@ -634,6 +634,7 @@ NODE_OPTIONS=--max-old-space-size=4096 npm run build
 - **Add more providers:** Run `openclaw configure --section model` for OpenAI, Google, etc.
 - **Enable web search:** Get free Brave API key at [brave.com/search/api](https://brave.com/search/api/) and add via `openclaw configure`
 - **Full Postgres schema:** Follow [postgres-setup.md](postgres-setup.md) for memory tables, agent profiles, cost tracking
+- **Secrets management:** See [secrets-management.md](secrets-management.md) for secure API key storage
 - **Deploy to VPS:** See [deployment-guide.md](deployment-guide.md) for 24/7 server setup
 - **Customize your agent:** Edit `~/.openclaw/workspace/SOUL.md`
 
