@@ -19,8 +19,8 @@ HermitClaw adds infrastructure on top: Postgres memory, multi-agent coordination
 ## Reading Order
 
 You're in the right place. After this guide:
-1. `postgres-setup.md` — Full schema details and advanced Postgres config
-2. `deployment-guide.md` — VPS deployment for 24/7 operation
+1. [postgres-setup.md](postgres-setup.md) — Full schema details and advanced Postgres config
+2. [deployment-guide.md](deployment-guide.md) — VPS deployment for 24/7 operation
 
 ---
 
@@ -77,7 +77,7 @@ brew install node
 
 Verify:
 ```bash
-node --version  # Should show v20+ or v22+
+node --version  # Should show v20 or later
 ```
 
 ---
@@ -181,6 +181,8 @@ Type `exit` or Ctrl+C to quit.
 ## Part 2: Enhanced Setup (Steps 9–12)
 
 Add Telegram, memory, and monitoring.
+
+> **Disk space:** Full setup (Steps 9-12) requires ~2GB of free space.
 
 ---
 
@@ -297,14 +299,14 @@ npm install
 
 **Create `.env` file** (connects dashboard to your database):
 ```bash
-cat > .env << 'EOF'
-DATABASE_URL="postgresql:///openclaw_db?host=/tmp"
-EOF
+echo 'DATABASE_URL="postgresql:///openclaw_db?host=/tmp"' > .env
 ```
 
 > **Note:** The `host=/tmp` tells it to use the Unix socket (how Homebrew Postgres works on macOS). No `localhost` needed.
 
 **Start the dashboard (choose one):**
+
+> **Recommendation:** Use production mode for daily use — it's faster and more stable.
 
 *Development mode* (auto-reloads on code changes):
 ```bash
@@ -602,13 +604,20 @@ Check logs: `openclaw gateway logs` or `~/.openclaw/logs/`
 2. Check `.env` file exists with correct DATABASE_URL
 3. Try `npm install` again in the dashboard folder
 
+### Dashboard build fails with memory error
+Increase Node.js memory limit:
+```bash
+NODE_OPTIONS=--max-old-space-size=4096 npm run build
+```
+
 ---
 
 ## Next Steps
 
 - **Add more providers:** Run `openclaw configure --section model` for OpenAI, Google, etc.
-- **Full Postgres schema:** Follow `postgres-setup.md` for memory tables, agent profiles, cost tracking
-- **Deploy to VPS:** See `deployment-guide.md` for 24/7 server setup
+- **Enable web search:** Get free Brave API key at [brave.com/search/api](https://brave.com/search/api/) and add via `openclaw configure`
+- **Full Postgres schema:** Follow [postgres-setup.md](postgres-setup.md) for memory tables, agent profiles, cost tracking
+- **Deploy to VPS:** See [deployment-guide.md](deployment-guide.md) for 24/7 server setup
 - **Customize your agent:** Edit `~/.openclaw/workspace/SOUL.md`
 
 ---
