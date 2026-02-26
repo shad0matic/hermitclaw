@@ -132,17 +132,21 @@ The gateway is OpenClaw's brain — a background process that handles all reques
 openclaw gateway start
 ```
 
-You should see output like:
-```
-[Gateway] Starting...
-[Gateway] Listening on port 3000
-[Gateway] Ready ✓
-```
+You should see a success message indicating the gateway has started.
 
 **Important notes:**
 - If you close this terminal, the gateway stops. Run `openclaw gateway start` again to restart.
 - To run in background (so you can close the terminal): `openclaw gateway start --daemon`
 - Check if it's running anytime: `openclaw status`
+
+**Changing the port:** By default, the gateway uses port 4123. To use a different port, edit `~/.openclaw/openclaw.json` and add/modify:
+```json
+{
+  "gateway": {
+    "port": 4123
+  }
+}
+```
 
 ---
 
@@ -162,6 +166,8 @@ Hello! What can you do?
 Type `exit` or Ctrl+C to quit.
 
 **Congratulations — you have a working OpenClaw setup!**
+
+> **Note:** Your first interaction creates the workspace at `~/.openclaw/workspace/` where your agent stores memory and configuration.
 
 ---
 
@@ -281,9 +287,11 @@ npm install
 **Create `.env` file** (connects dashboard to your database):
 ```bash
 cat > .env << 'EOF'
-DATABASE_URL="postgresql://localhost/openclaw_db?host=/tmp"
+DATABASE_URL="postgresql:///openclaw_db?host=/tmp"
 EOF
 ```
+
+> **Note:** The `host=/tmp` tells it to use the Unix socket (how Homebrew Postgres works on macOS). No `localhost` needed.
 
 **Start the dashboard:**
 ```bash
@@ -292,7 +300,28 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. You should see the MC Dashboard!
 
+**Changing the port:** If port 3000 is in use, start on a different port:
+```bash
+npm run dev -- -p 3001
+```
+
 > **Note:** This runs in development mode (stops when you close terminal). For production/remote access, see [deployment-guide.md](deployment-guide.md).
+
+---
+
+## Verify Your Setup
+
+After completing all steps, confirm everything works:
+
+| Check | How to verify |
+|-------|---------------|
+| ✓ Gateway running | `openclaw status` shows "running" |
+| ✓ CLI chat works | `openclaw chat` responds to messages |
+| ✓ Telegram works | Your bot responds in Telegram |
+| ✓ Postgres running | `brew services list` shows postgresql "started" |
+| ✓ Dashboard loads | [localhost:3000](http://localhost:3000) shows MC Dashboard |
+
+If any check fails, see [Troubleshooting](#troubleshooting) below.
 
 ---
 
@@ -322,13 +351,15 @@ Now that you have a working agent, here's what makes it different from ChatGPT:
 ### Real-World Use Cases
 
 **1. Organize by Topic (Telegram)**
-Create separate Telegram topics for different areas of your life:
+Create a Telegram **group** with your bot and enable **Topics** (group settings → Topics). Then create separate topics for different areas:
 - 📋 **Work** — project updates, meeting notes, task tracking
 - 📚 **Learning** — track courses, research topics, book summaries
 - 🏠 **Personal** — home projects, health tracking, habit reminders
 - 💰 **Finance** — expense tracking, investment research
 
 Your agent remembers context per topic, so conversations stay focused.
+
+> **Tip:** Topics require a Telegram group, not a private chat. Create a group, add your bot, then enable Topics in group settings.
 
 **2. Manage Multiple Projects**
 Your agent can help track and coordinate:
@@ -498,7 +529,12 @@ npm run build  # if running in production mode
 ### "command not found: openclaw"
 Node.js or npm isn't in your PATH. Try:
 ```bash
+# Apple Silicon Macs (M1/M2/M3):
 export PATH="$PATH:/opt/homebrew/bin"
+
+# Intel Macs:
+export PATH="$PATH:/usr/local/bin"
+
 npm install -g openclaw
 ```
 
