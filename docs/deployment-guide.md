@@ -6,13 +6,13 @@ This guide provides instructions for deploying HermitClaw, a portable, self-host
 
 ## Prerequisites
 
-- OpenClaw installed
-- Postgres 18+ with pgvector
-- Node.js 24+
+- **OpenClaw** — Install via `npm install -g openclaw` ([docs](https://docs.openclaw.ai))
+- **Postgres 17+** with pgvector — See [postgres-setup.md](postgres-setup.md)
+- **Node.js 22+** — `brew install node` (macOS) or `apt install nodejs` (Linux)
 
 ## Quick Start
 
-1. **Install OpenClaw**: Follow the official OpenClaw installation guide.
+1. **Install OpenClaw**: `npm install -g openclaw` (see [mac-setup-guide.md](mac-setup-guide.md) for full walkthrough)
 2. **Set up OpenClaw Gateway as systemd service**: See [Gateway Persistence Setup](#gateway-persistence-setup-linux-vps) below.
 3. **Set up Postgres**: Install Postgres 18+ and enable pgvector.
 4. **Run Schema Setup**: Execute the schema setup scripts from `docs/postgres-setup.md`.

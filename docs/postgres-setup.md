@@ -1,13 +1,46 @@
 # Postgres Setup — openclaw_db
 
-**Updated:** 19/02/2026
-**PG Version:** 18.x | **pgvector:** 0.8.x
-**Host:** localhost (unix socket `/var/run/postgresql`)
-**DB:** `openclaw_db` | **User:** `$USER` (peer auth)
+**Updated:** 26/02/2026
+**PG Version:** 17.x / 18.x | **pgvector:** 0.8.x
+**DB:** `openclaw_db`
 
 ---
 
-## Quick Setup
+## macOS Setup (Homebrew)
+
+If you're on macOS, use Homebrew. This is the easiest path.
+
+```bash
+# 1. Install Postgres
+brew install postgresql@17
+brew services start postgresql@17
+
+# 2. Install pgvector
+brew install pgvector
+
+# 3. Create database
+createdb openclaw_db
+
+# 4. Enable pgvector extension
+psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# 5. Verify
+psql -d openclaw_db -c "SELECT version();"
+```
+
+**Note:** On macOS with Homebrew, you connect as your current user (no `sudo -u postgres` needed). The socket is at `/tmp/.s.PGSQL.5432`.
+
+**Connection string for Node.js:**
+```javascript
+const pool = new pg.Pool({ 
+  database: 'openclaw_db',
+  host: '/tmp'  // Homebrew uses /tmp for socket
+});
+```
+
+---
+
+## Linux Setup (Ubuntu/Debian)
 
 ```bash
 # 1. Create role and database
@@ -23,6 +56,8 @@ sudo -u postgres psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
 # 3. Verify connection
 psql -d openclaw_db -c "SELECT version();"
 ```
+
+**Socket location:** `/var/run/postgresql`
 
 ---
 
@@ -69,9 +104,11 @@ psql -d openclaw_db -c "SELECT version();"
 
 ## Schema Setup
 
-Full schema DDL is in the daily `pg_dump` backups (`pg-YYYY-MM-DD.sql.gz`).
+**Fresh install?** Run the SQL below to create the essential tables. This is all you need to get started.
 
-For fresh installs, restore from a backup or use the core tables:
+**Migrating from existing setup?** Restore from a backup file (`pg-YYYY-MM-DD.sql.gz`).
+
+### Essential Tables (Fresh Install)
 
 ```sql
 -- Core schemas
@@ -163,13 +200,19 @@ psql -d openclaw_db -c "SHOW timezone;"
 
 ## Connection
 
-**Node.js:**
+**Node.js (Linux):**
 ```javascript
 import pg from 'pg';
 const pool = new pg.Pool({ database: 'openclaw_db', host: '/var/run/postgresql' });
 ```
 
-**CLI:**
+**Node.js (macOS/Homebrew):**
+```javascript
+import pg from 'pg';
+const pool = new pg.Pool({ database: 'openclaw_db', host: '/tmp' });
+```
+
+**CLI (both):**
 ```bash
 psql -d openclaw_db
 ```

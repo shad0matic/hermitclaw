@@ -4,6 +4,22 @@
 
 Turn any machine into an intelligent agent hub with Postgres-backed memory, multi-agent workflows, a dashboard, and tools that survive session restarts.
 
+---
+
+## 🚀 Start Here
+
+**New to OpenClaw?** Follow this path:
+
+| Step | Doc | Time | What you'll do |
+|------|-----|------|----------------|
+| 1 | [mac-setup-guide.md](docs/mac-setup-guide.md) | 20 min | Install everything, send your first message |
+| 2 | [postgres-setup.md](docs/postgres-setup.md) | 15 min | Set up vector memory (optional) |
+| 3 | [deployment-guide.md](docs/deployment-guide.md) | 30 min | Deploy to VPS for 24/7 (optional) |
+
+**Already have OpenClaw running?** Jump to [Quick Start](#quick-start) below.
+
+---
+
 ## What's Inside
 
 ```
@@ -27,15 +43,28 @@ dashboard/       # → see oclaw-ops repo (Next.js Mission Control dashboard)
 - **Backup & Reliability** — Automated daily backups, systemd services, log rotation
 - **Compact Context** — Token-efficient JSON summaries per scope (topic/project/task) with auto-refresh ([docs](docs/compact-context.md))
 
-## Quick Start
+## Quick Start (Experienced Users)
 
-> Full deployment guide: [docs/deployment-guide.md](docs/deployment-guide.md)
+Already familiar with OpenClaw? Here's the fast track:
 
-1. Install [OpenClaw](https://github.com/openclaw/openclaw)
-2. Set up Postgres 18+ with pgvector
-3. Run the schema setup from `docs/postgres-setup.md`
-4. Copy templates to your workspace
-5. Configure tools with your API keys
+```bash
+# 1. Clone HermitClaw
+git clone https://github.com/shad0matic/hermitclaw.git && cd hermitclaw
+npm install
+
+# 2. Set up Postgres (if not already)
+createdb openclaw_db
+psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+# Then run schema from docs/postgres-setup.md
+
+# 3. Copy templates to your workspace
+cp templates/* ~/.openclaw/workspace/
+
+# 4. Configure API keys
+openclaw configure --section model
+```
+
+For detailed setup, see [docs/deployment-guide.md](docs/deployment-guide.md).
 
 ## Stack
 
@@ -52,9 +81,8 @@ Built by Kevin 🍌 (lead minion) and their human as a real-world OpenClaw deplo
 
 ## Related
 
-- [oclaw-ops](https://github.com/YOUR_USER/oclaw-ops) — Mission Control dashboard
+- [oclaw-ops](https://github.com/shad0matic/oclaw-ops) — Mission Control dashboard
 - [OpenClaw](https://github.com/openclaw/openclaw) — The agent framework
-- [HermitClaw Roadmap](docs/hermitclaw/ROADMAP.md) — Future plans for portable MacBook setup
 
 ## License
 

@@ -1,123 +1,288 @@
-# HermitClaw & OpenClaw Mac Setup Guide
+# HermitClaw Mac Setup Guide
 
-Welcome! This guide will walk you through setting up HermitClaw and OpenClaw on your Mac. We'll go step-by-step, and no previous experience with the terminal is required. We'll explain what each command does as we go.
-
-## Who is this for?
-
-This guide is for anyone new to this kind of software, like Sacha (who's 14) or Thomas (who's a project manager and doesn't usually mess with code). If you've never used the terminal before, you're in the right place!
-
-## What are we installing?
-
-*   **HermitClaw:** A cool AI agent project.
-*   **OpenClaw:** The platform that HermitClaw runs on.
-*   **Homebrew:** A package manager for Mac. Think of it like an App Store for developers.
-*   **Node.js:** A runtime environment for JavaScript, which OpenClaw is built on.
-*   **PostgreSQL:** A database to store information.
+**Time:** ~20 minutes | **Difficulty:** Beginner-friendly
 
 ---
 
-## Step 1: Open Your Terminal
+## What is OpenClaw?
 
-The terminal is an application on your Mac that lets you run commands directly. It's a powerful tool, and we'll be using it a lot today.
+OpenClaw is an AI agent that runs on your machine. You chat with it via Telegram, Discord, CLI, or other channels. It can read files, run commands, search the web, and remember things across sessions.
 
-You can find it in `Applications -> Utilities -> Terminal`. Open it up, and you'll see a window with a blinking cursor. You're ready for the next step!
+HermitClaw adds infrastructure on top: Postgres memory, multi-agent coordination, cost tracking, and a dashboard.
+
+**By the end of this guide, you'll send your first message to your own AI agent.**
+
+---
+
+## Reading Order
+
+You're in the right place. After this guide:
+1. `postgres-setup.md` — If you want vector memory (optional for first run)
+2. `deployment-guide.md` — Only if deploying to a VPS later
+
+---
+
+## Step 1: Open Terminal
+
+Find it in `Applications → Utilities → Terminal`.
+
+All commands below go here. Copy-paste is fine.
 
 ---
 
 ## Step 2: Install Homebrew
 
-Homebrew is a package manager that makes it easy to install developer tools on your Mac.
-
-**What this command does:**
-This command downloads and runs the Homebrew installer. It will ask for your password, because it needs permission to install software on your computer.
+Homebrew is a package manager for macOS (like an App Store for dev tools).
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-After running this, Homebrew will be installed. It might take a few minutes.
+Follow the prompts. It may ask for your password.
+
+**After install**, Homebrew will tell you to run 2 commands to add it to your PATH. They look like:
+```bash
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
+```
+Run whatever it shows you, then continue.
 
 ---
 
 ## Step 3: Install Node.js
 
-Node.js is what OpenClaw uses to run. We'll use Homebrew to install it.
-
-**What this command does:**
-This tells Homebrew to install the latest version of Node.js.
+OpenClaw runs on Node.js.
 
 ```bash
 brew install node
 ```
 
----
-
-## Step 4: Install PostgreSQL
-
-PostgreSQL is the database we'll use to store information.
-
-**What this command does:**
-First, we tell Homebrew to install PostgreSQL. Then, we start it up as a service that runs in the background.
-
+Verify:
 ```bash
-brew install postgresql
-brew services start postgresql
+node --version  # Should show v20+ or v22+
 ```
 
 ---
 
-## Step 5: Install OpenClaw
-
-Now we'll install OpenClaw itself. We'll use `npm`, which is the Node Package Manager and was installed with Node.js.
-
-**What this command does:**
-This command tells `npm` to install OpenClaw globally on your system, so you can run it from anywhere.
+## Step 4: Install OpenClaw
 
 ```bash
-npm install -g @openclaw/cli
+npm install -g openclaw
+```
+
+Verify:
+```bash
+openclaw --version
 ```
 
 ---
 
-## Step 6: Clone and Set Up HermitClaw
+## Step 5: Get Your API Keys
 
-Now we're going to download the HermitClaw project from GitHub and get it ready to run.
+**You need at least one AI provider API key.** OpenClaw talks to Claude, GPT, Gemini, etc. — you provide the keys.
 
-**What these commands do:**
-1.  `git clone` downloads the HermitClaw project into a new folder called `hermitclaw`.
-2.  `cd hermitclaw` moves you into that new folder.
-3.  `npm install` installs all the specific packages that HermitClaw needs to run.
+| Provider | Get key at | Model examples |
+|----------|-----------|----------------|
+| Anthropic | https://console.anthropic.com/settings/keys | Claude Sonnet, Opus, Haiku |
+| OpenAI | https://platform.openai.com/api-keys | GPT-4o, GPT-4 |
+| Google | https://aistudio.google.com/apikey | Gemini Pro |
 
-```bash
-git clone https://github.com/your-username/hermitclaw.git
-cd hermitclaw
-npm install
-```
-*(Note: Replace `your-username` with the correct GitHub username if you have a fork, otherwise use the main project URL)*
+**Recommendation:** Start with Anthropic (Claude). Create an account, add billing, generate an API key. It starts with `sk-ant-...`.
+
+Keep this key handy for Step 7.
 
 ---
 
-## Step 7: First Run!
+## Step 6: Initial Configuration
 
-You're all set up! Let's start OpenClaw for the first time.
+Run the setup wizard:
 
-**What this command does:**
-This starts the OpenClaw gateway, which is the main process that runs in the background.
+```bash
+openclaw configure
+```
+
+This creates `~/.openclaw/openclaw.json` with your basic config.
+
+When asked about channels, you can skip for now (press Enter) — we'll add Telegram later.
+
+---
+
+## Step 7: Add Your API Key
+
+OpenClaw stores API keys in auth profile files. Let's add your Anthropic key:
+
+```bash
+openclaw configure --section model
+```
+
+Select `anthropic`, then paste your API key when prompted.
+
+**Alternative (manual):** Edit `~/.openclaw/agents/main/agent/auth-profiles.json`:
+```json
+{
+  "version": 1,
+  "profiles": {
+    "anthropic:default": {
+      "type": "token",
+      "provider": "anthropic", 
+      "token": "sk-ant-YOUR-KEY-HERE"
+    }
+  }
+}
+```
+
+---
+
+## Step 8: Start the Gateway
+
+The gateway is OpenClaw's brain — it runs in the background and handles all requests.
 
 ```bash
 openclaw gateway start
 ```
 
-You should see a message that the gateway has started successfully.
+You should see output indicating it started. Keep this terminal open, or run with `--daemon` to background it.
+
+---
+
+## Step 9: Your First Message! 🎉
+
+Open a **new terminal tab** (Cmd+T) and run:
+
+```bash
+openclaw chat
+```
+
+You're now chatting with your AI agent. Try:
+```
+Hello! What can you do?
+```
+
+Type `exit` or Ctrl+C to quit.
+
+**Congratulations — you have a working OpenClaw setup!**
+
+---
+
+## Step 10: Connect Telegram (Optional but Recommended)
+
+Talking via CLI works, but Telegram is more convenient.
+
+### 10a: Create a Telegram Bot
+
+1. Open Telegram, search for `@BotFather`
+2. Send `/newbot`
+3. Follow prompts to name your bot
+4. Copy the token (looks like `123456789:ABC...XYZ`)
+
+### 10b: Add Bot Token to OpenClaw
+
+```bash
+openclaw configure --section telegram
+```
+
+Paste your bot token when prompted.
+
+### 10c: Restart Gateway
+
+```bash
+openclaw gateway restart
+```
+
+### 10d: Start Chatting
+
+Open Telegram, find your bot, send a message. It should respond!
+
+---
+
+## Step 11: Install Postgres (Optional)
+
+Postgres enables long-term memory with vector search. Skip this for now if you just want to test; come back later.
+
+```bash
+brew install postgresql@17
+brew services start postgresql@17
+```
+
+**Install pgvector** (for semantic search):
+```bash
+brew install pgvector
+```
+
+**Create the database:**
+```bash
+createdb openclaw_db
+psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+For full schema setup, see `postgres-setup.md`.
+
+---
+
+## Step 12: Clone HermitClaw (Optional)
+
+HermitClaw adds tools, scripts, and templates on top of OpenClaw.
+
+```bash
+cd ~
+git clone https://github.com/shad0matic/hermitclaw.git
+cd hermitclaw
+npm install
+```
+
+Explore the `tools/`, `scripts/`, and `templates/` folders.
+
+---
+
+## Quick Reference
+
+| Command | What it does |
+|---------|--------------|
+| `openclaw gateway start` | Start the agent |
+| `openclaw gateway stop` | Stop the agent |
+| `openclaw gateway restart` | Restart after config changes |
+| `openclaw chat` | CLI chat interface |
+| `openclaw status` | Check gateway status |
+| `openclaw configure` | Run setup wizard |
 
 ---
 
 ## Troubleshooting
 
-*   **`command not found: brew`**: This means Homebrew didn't install correctly. Try running the installation command again.
-*   **`command not found: npm`** or **`command not found: node`**: This means Node.js didn't install correctly. Try `brew install node` again.
-*   **`EACCES` permissions errors during `npm install -g`**: This means `npm` doesn't have the right permissions to install things globally. You can fix this by either running the command with `sudo` (`sudo npm install -g @openclaw/cli`), or by changing the ownership of the `npm` directories. For beginners, using `sudo` is easier, but be aware it gives the command root access.
+### "command not found: openclaw"
+Node.js or npm isn't in your PATH. Try:
+```bash
+export PATH="$PATH:/opt/homebrew/bin"
+npm install -g openclaw
+```
+
+### "command not found: brew"
+Homebrew didn't install correctly. Re-run Step 2.
+
+### Gateway starts but bot doesn't respond
+1. Check `openclaw status` — is gateway running?
+2. Check your API key is correct in auth-profiles.json
+3. Check Telegram token is correct: `cat ~/.openclaw/openclaw.json | grep telegram`
+
+### "insufficient_quota" or "rate_limit" errors
+Your API provider needs billing set up, or you've hit limits. Check your provider's dashboard.
+
+### Postgres connection errors
+Make sure Postgres is running: `brew services list`
 
 ---
 
-That's it! You're ready to start using HermitClaw and OpenClaw. If you have any problems, don't hesitate to ask for help.
+## Next Steps
+
+- **Add more providers:** Run `openclaw configure --section model` again for OpenAI, Google, etc.
+- **Set up memory:** Follow `postgres-setup.md` for full vector memory
+- **Deploy to VPS:** See `deployment-guide.md` for 24/7 server setup
+- **Customize your agent:** Edit `~/.openclaw/workspace/SOUL.md` to give it personality
+
+---
+
+## Need Help?
+
+- OpenClaw docs: https://docs.openclaw.ai
+- Discord community: https://discord.com/invite/clawd
+- GitHub issues: https://github.com/openclaw/openclaw/issues
