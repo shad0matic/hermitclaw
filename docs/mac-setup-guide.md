@@ -112,6 +112,8 @@ When prompted for **model provider**, select `anthropic` and paste your API key.
 
 For other prompts (channels, etc.), you can press Enter to skip — we'll add Telegram later.
 
+> **Tip:** If the wizard doesn't ask about model providers, run `openclaw configure --section model` afterward to add your API key.
+
 **Where is my API key stored?** In `~/.openclaw/agents/main/agent/auth-profiles.json` (created automatically by the wizard).
 
 ---
@@ -179,7 +181,7 @@ openclaw gateway restart
 
 ### 9d: Start Chatting
 
-Open Telegram, find your bot, send a message. It should respond!
+In Telegram, tap the search bar and type your bot's username (the `@something_bot` name you gave BotFather). Open the chat and send any message. It should respond!
 
 ---
 
@@ -190,15 +192,21 @@ Now that you have a working agent, here's what makes it different from ChatGPT:
 ### Quick Examples (Try These Now)
 
 ```
-"List the files in my Downloads folder"
+"Hello! What can you do?"
 
-"Search the web for the weather in Paris today"
+"Tell me a joke about programmers"
 
-"Remember that my favorite programming language is Python"
-(Later: "What's my favorite programming language?")
+"Explain what an API is in simple terms"
 
 "Read my ~/.zshrc and explain what it does"
 ```
+
+> **Note:** Some features need extra setup:
+> - **Web search** requires a Brave Search API key
+> - **Long-term memory** ("remember that...") requires Postgres
+> - **File access** may prompt for macOS permissions
+> 
+> If something doesn't work, that's okay — basic chat proves your setup works!
 
 ### Real-World Use Cases
 
@@ -252,6 +260,8 @@ You coordinate from the main agent:
 "Draft chapter 1 outline, then generate 3 illustration concepts"
 "Build the PDF with current chapters and send me a preview"
 ```
+
+> **Note:** Multi-agent coordination requires Postgres + HermitClaw setup. See [deployment-guide.md](deployment-guide.md) for full infrastructure setup.
 
 **5. Personal Knowledge Base**
 Over time, your agent builds memory:
@@ -309,7 +319,7 @@ HermitClaw includes tools to monitor and optimize spending:
 |------|---------|
 | `tools/cost-tracker.mjs` | Track spending by day/agent/task |
 | `tools/pg-memory.mjs` | Query cost logs from Postgres |
-| Dashboard (oclaw-ops) | Visual cost charts and alerts |
+| Dashboard (oclaw-ops) | Visual cost charts and alerts *(separate setup — see [deployment-guide.md](deployment-guide.md))* |
 
 ### Built-in Cost Optimization
 
@@ -325,7 +335,7 @@ HermitClaw is designed to minimize token usage:
 - Use specific, concise prompts (fewer input tokens)
 - Let the agent use Haiku for simple tasks, Sonnet for complex ones
 - Set up the Compact Context system for frequently-accessed topics
-- Check the dashboard weekly to spot unexpected spending
+- Monitor your provider dashboards (Anthropic, OpenAI) to spot unexpected spending
 
 ---
 
@@ -349,7 +359,7 @@ createdb openclaw_db
 psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
 ```
 
-**Connect OpenClaw to Postgres:** Add this to your `~/.openclaw/openclaw.json`:
+**Connect OpenClaw to Postgres:** Open `~/.openclaw/openclaw.json` in a text editor and **merge** (don't replace!) this database section into your existing config:
 ```json
 {
   "database": {
@@ -359,6 +369,8 @@ psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
   }
 }
 ```
+
+> ⚠️ **Don't replace the entire file** — just add the `"database": {...}` section alongside your existing settings.
 
 Then restart the gateway: `openclaw gateway restart`
 
@@ -383,9 +395,9 @@ npm install
 - `templates/` — Ready-to-use SOUL.md, AGENTS.md, etc.
 - `docs/` — You're reading them!
 
-Copy templates to your workspace:
+Copy templates to your workspace (use `-i` to confirm before overwriting existing files):
 ```bash
-cp templates/* ~/.openclaw/workspace/
+cp -i templates/* ~/.openclaw/workspace/
 ```
 
 ---
