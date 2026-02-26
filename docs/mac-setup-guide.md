@@ -60,6 +60,11 @@ Run whatever it shows you.
 brew install git
 ```
 
+Verify:
+```bash
+git --version  # Should show git version 2.x
+```
+
 ---
 
 ### Step 3: Install Node.js
@@ -211,6 +216,8 @@ openclaw gateway restart
 
 In Telegram, tap the search bar and type your bot's username (the `@something_bot` name you gave BotFather). Open the chat and send any message. It should respond!
 
+> **Note:** The first response may take 10-15 seconds as the model initializes.
+
 ---
 
 ### Step 10: Install Postgres (Recommended)
@@ -297,19 +304,32 @@ EOF
 
 > **Note:** The `host=/tmp` tells it to use the Unix socket (how Homebrew Postgres works on macOS). No `localhost` needed.
 
-**Start the dashboard:**
+**Start the dashboard (choose one):**
+
+*Development mode* (auto-reloads on code changes):
 ```bash
 npm run dev
+```
+First run compiles the app — wait 30-60 seconds until you see "Ready" in the terminal.
+
+*Production mode* (faster, recommended for daily use):
+```bash
+npm run build    # One-time build (takes 1-2 minutes)
+npm run start    # Start the server
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. You should see the MC Dashboard!
 
-**Changing the port:** If port 3000 is in use, start on a different port:
+**Changing the port:** If port 3000 is in use:
 ```bash
+# Dev mode:
 npm run dev -- -p 3001
+
+# Production mode:
+npm run start -- -p 3001
 ```
 
-> **Note:** This runs in development mode. Press `Ctrl+C` to stop. For production/remote access, see [deployment-guide.md](deployment-guide.md).
+> **Note:** Press `Ctrl+C` to stop. For remote access, see [deployment-guide.md](deployment-guide.md).
 
 ---
 
@@ -390,6 +410,8 @@ summarize the top 3"
 
 "What are the current best practices for Next.js deployment?"
 ```
+
+> **Note:** Web search requires a Brave Search API key. Get one free at [brave.com/search/api](https://brave.com/search/api/) and add via `openclaw configure`.
 
 **4. Write a Book (Multi-Agent Coordination)**
 HermitClaw supports spawning specialized sub-agents for complex projects:
@@ -495,6 +517,7 @@ HermitClaw is designed to minimize token usage:
 | `openclaw gateway start --daemon` | Start in background |
 | `openclaw gateway stop` | Stop the agent |
 | `openclaw gateway restart` | Restart after config changes |
+| `openclaw gateway logs` | View recent gateway logs |
 | `openclaw chat` | CLI chat interface |
 | `openclaw status` | Check gateway status |
 | `openclaw configure` | Run setup wizard |
@@ -523,7 +546,8 @@ npm install
 cd ~/oclaw-ops/dashboard
 git pull
 npm install
-# Then restart with: npm run dev
+npm run build   # Rebuild for production
+# Then restart with: npm run start (or npm run dev)
 ```
 
 ---
@@ -544,6 +568,13 @@ npm install -g openclaw
 
 ### "command not found: brew"
 Homebrew didn't install correctly. Re-run Step 2.
+
+### npm permission errors (EACCES)
+Fix npm permissions:
+```bash
+sudo chown -R $(whoami) ~/.npm
+```
+Then retry the npm command. Alternatively, use a Node version manager like `nvm` to avoid permission issues.
 
 ### Gateway starts but bot doesn't respond
 1. Check `openclaw status` — is gateway running?
