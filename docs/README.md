@@ -16,6 +16,18 @@ Getting started with HermitClaw — installation, deployment, and initial config
 
 ---
 
+### 🎛️ [Configuration & Onboarding](config/)
+Agent identity, memory structure, and operational rules.
+
+- [Configuration Guide](config/) — AGENTS.md, SOUL.md, USER.md, HEARTBEAT.md templates
+- Onboarding checklist for new agents
+- Multi-agent configuration patterns
+- Best practices for identity files
+
+**Read this if:** You're setting up a new agent or customizing behavior.
+
+---
+
 ### 🧠 [Memory Management](memory/)
 Context discipline, semantic memory, and token optimization strategies.
 
@@ -83,11 +95,13 @@ Roadmap, project goals, and development notes.
 
 - **Get started from scratch** → [Setup: Mac Setup Guide](setup/mac-setup-guide.md)
 - **Deploy to production** → [Setup: Deployment Guide](setup/deployment-guide.md)
+- **Configure my agent's identity** → [Config: Configuration Guide](config/)
 - **Reduce token costs** → [Memory: Context Management](memory/context-management.md)
 - **Fix a broken deployment** → [Operations: Recovery Guide](operations/recovery-guide.md)
 - **Set up semantic memory** → [Setup: Postgres Setup](setup/postgres-setup.md)
 - **Understand memory architecture** → [Memory: Context Management](memory/context-management.md)
 - **Configure API keys** → [Operations: Secrets Management](operations/secrets-management.md)
+- **Set up heartbeat routines** → [Config: HEARTBEAT.md](config/)
 
 ---
 

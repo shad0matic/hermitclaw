@@ -75,7 +75,8 @@ For detailed setup, see [docs/setup/deployment-guide.md](docs/setup/deployment-g
 
 Comprehensive guides organized by topic:
 
-- **[🚀 Setup](docs/setup/)** — Installation, deployment, configuration
+- **[🚀 Setup](docs/setup/)** — Installation, deployment, infrastructure
+- **[🎛️ Configuration](docs/config/)** — Agent identity, memory structure, onboarding
 - **[🧠 Memory Management](docs/memory/)** — Context optimization, semantic memory
 - **[⚙️ Operations](docs/operations/)** — Maintenance, monitoring, troubleshooting
 - **[💰 Cost & Model Management](docs/cost/)** — Optimize spending, track usage
