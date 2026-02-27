@@ -12,11 +12,15 @@ Turn any machine into an intelligent agent hub with Postgres-backed memory, mult
 
 | Step | Doc | Time | What you'll do |
 |------|-----|------|----------------|
-| 1 | [mac-setup-guide.md](docs/mac-setup-guide.md) | 20 min | Install everything, send your first message |
-| 2 | [postgres-setup.md](docs/postgres-setup.md) | 15 min | Set up vector memory (optional) |
-| 3 | [deployment-guide.md](docs/deployment-guide.md) | 30 min | Deploy to VPS for 24/7 (optional) |
+| 1 | [Mac Setup Guide](docs/setup/mac-setup-guide.md) | 20 min | Install everything, send your first message |
+| 2 | [Postgres Setup](docs/setup/postgres-setup.md) | 15 min | Set up vector memory (optional) |
+| 3 | [Deployment Guide](docs/setup/deployment-guide.md) | 30 min | Deploy to VPS for 24/7 (optional) |
 
 **Already have OpenClaw running?** Jump to [Quick Start](#quick-start) below.
+
+**Want to optimize costs?** Check [Memory Management](docs/memory/) and [Cost Management](docs/cost/).
+
+**Dive deep?** See [📚 Full Documentation](docs/) for the complete guide.
 
 ---
 
@@ -41,8 +45,8 @@ dashboard/       # → see oclaw-ops repo (Next.js Mission Control dashboard)
 - **System Metrics** — 24h rolling buffer for dashboard charts
 - **Agent Coordination** — File claim system to prevent multi-agent edit conflicts, git commit tracking, and task event logging to Postgres
 - **Backup & Reliability** — Automated daily backups, systemd services, log rotation
-- **Compact Context** — Token-efficient JSON summaries per scope (topic/project/task) with auto-refresh ([docs](docs/compact-context.md))
-- **Secrets Management** — Centralized API key storage with rotation guides ([docs](docs/secrets-management.md))
+- **Compact Context** — Token-efficient JSON summaries per scope (topic/project/task) with auto-refresh ([docs](docs/memory/compact-context.md))
+- **Secrets Management** — Centralized API key storage with rotation guides ([docs](docs/operations/secrets-management.md))
 
 ## Quick Start (Experienced Users)
 
@@ -65,7 +69,20 @@ cp templates/* ~/.openclaw/workspace/
 openclaw configure --section model
 ```
 
-For detailed setup, see [docs/deployment-guide.md](docs/deployment-guide.md).
+For detailed setup, see [docs/setup/deployment-guide.md](docs/setup/deployment-guide.md).
+
+## 📚 Documentation
+
+Comprehensive guides organized by topic:
+
+- **[🚀 Setup](docs/setup/)** — Installation, deployment, configuration
+- **[🧠 Memory Management](docs/memory/)** — Context optimization, semantic memory
+- **[⚙️ Operations](docs/operations/)** — Maintenance, monitoring, troubleshooting
+- **[💰 Cost & Model Management](docs/cost/)** — Optimize spending, track usage
+- **[🤖 Agents](docs/agents/)** — Multi-agent coordination, spawning strategies
+- **[🏗️ Architecture](docs/architecture/)** — System design, data flow, infrastructure
+
+**Start with:** [docs/README.md](docs/README.md) for a full index and quick navigation.
 
 ## Stack
 
