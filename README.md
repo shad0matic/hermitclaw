@@ -20,7 +20,7 @@ Turn any machine into an intelligent agent hub with Postgres-backed memory, mult
 
 **Want to optimize costs?** Check [Memory Management](docs/memory/) and [Cost Management](docs/cost/).
 
-**Dive deep?** See [📚 Full Documentation](docs/) for the complete guide.
+**📚 [Full Documentation →](docs/)** — Complete guides organized by topic
 
 ---
 
