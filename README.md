@@ -46,7 +46,7 @@ dashboard/       # → see oclaw-ops repo (Next.js Mission Control dashboard)
 - **Agent Coordination** — File claim system to prevent multi-agent edit conflicts, git commit tracking, and task event logging to Postgres
 - **Backup & Reliability** — Automated daily backups, systemd services, log rotation
 - **Compact Context** — Token-efficient JSON summaries per scope (topic/project/task) with auto-refresh ([docs](docs/memory/compact-context.md))
-- **Secrets Management** — Centralized API key storage with rotation guides ([docs](docs/operations/secrets-management.md))
+- **Secrets Management** — `.env` as single source of truth for API keys, easy rotation ([docs](docs/operations/secrets-management.md))
 
 ## Quick Start (Experienced Users)
 
@@ -62,11 +62,16 @@ createdb openclaw_db
 psql -d openclaw_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
 # Then run schema from docs/postgres-setup.md
 
-# 3. Copy templates to your workspace
-cp templates/* ~/.openclaw/workspace/
+# 3. Set up secrets (.env file)
+cp templates/.env.example ~/.openclaw/.env
+chmod 600 ~/.openclaw/.env
+nano ~/.openclaw/.env  # Add your API keys
 
-# 4. Configure API keys
-openclaw configure --section model
+# 4. Copy workspace templates
+cp templates/AGENTS.md templates/SOUL.md templates/USER.md ~/.openclaw/workspace/
+
+# 5. Restart gateway to load .env
+openclaw gateway restart
 ```
 
 For detailed setup, see [docs/setup/deployment-guide.md](docs/setup/deployment-guide.md).

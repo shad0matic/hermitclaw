@@ -1,113 +1,178 @@
-# Secrets Management
+# Secrets Management — .env as Single Source of Truth
 
-All API keys, tokens, and passwords should be stored in a **single file** that is never committed to git.
+**Last updated:** 2026-02-28
 
----
+## Overview
 
-## Location
+HermitClaw uses **`.env` as the single source of truth** for all API keys and secrets. Config files reference these variables using `${VAR_NAME}` syntax.
 
-```
-~/.openclaw/.env
-```
+This approach ensures:
+- ✅ **Easy key rotation** — edit one file, restart gateway
+- ✅ **No hardcoded secrets** — all keys in one place
+- ✅ **Version control safe** — .env is gitignored
+- ✅ **Consistent** — all agents and skills use same keys
 
-This file:
-- Lives outside any git repo (in your home directory)
-- Is loaded automatically by OpenClaw
-- Should be readable only by you (`chmod 600 ~/.openclaw/.env`)
+## Setup
 
----
-
-## Template
-
-Create `~/.openclaw/.env` with this structure:
+### 1. Create .env file
 
 ```bash
-# ~/.openclaw/.env — Master secrets file (NEVER COMMIT!)
-# After editing, restart gateway: openclaw gateway restart
-
-# === Database ===
-PGUSER=openclaw
-PGDATABASE=openclaw_db
-DATABASE_URL="postgresql://openclaw@localhost:5432/openclaw_db?host=%2Fvar%2Frun%2Fpostgresql"
-
-# === Telegram ===
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token
-
-# === AI Providers ===
-ANTHROPIC_API_KEY=sk-ant-xxx
-OPENAI_API_KEY=sk-proj-xxx
-GOOGLE_API_KEY=AIzaSyxxx        # Also used for Gemini
-XAI_API_KEY=xai-xxx
-
-# === Search ===
-BRAVE_API_KEY=BSAxxx
-
-# === Dashboard ===
-OPENCLAW_GW_TOKEN=your_gateway_token
-ADMIN_PASSWORD=your_admin_password
+cp templates/.env.example ~/.openclaw/.env
+chmod 600 ~/.openclaw/.env  # Restrict permissions
 ```
 
----
+### 2. Add your keys
 
-## Security Checklist
-
-| Action | Command |
-|--------|---------|
-| Set file permissions | `chmod 600 ~/.openclaw/.env` |
-| Verify not in any repo | `git status` in `~/.openclaw/` should fail |
-| Never commit `.env` files | Add `.env*` to all `.gitignore` files |
-
----
-
-## Other Apps (Dashboard, Scripts)
-
-Instead of creating separate `.env` files, **symlink** to the master file:
+Edit `~/.openclaw/.env` and replace placeholder values:
 
 ```bash
-# For dashboard
-ln -s ~/.openclaw/.env ~/projects/oclaw-ops/dashboard/.env
+# Required
+GOOGLE_API_KEY=AIzaSy...
+TELEGRAM_BOT_TOKEN=8475...
 
-# For any other tool
-ln -s ~/.openclaw/.env /path/to/project/.env
+# Optional but recommended
+OPENAI_API_KEY=sk-proj-...
+BRAVE_API_KEY=BSA-...
+ELEVENLABS_API_KEY=sk_e1...
 ```
 
-This ensures:
-- One file to update when rotating keys
-- No duplicate secrets scattered across projects
-- Consistent configuration everywhere
+### 3. Verify config files use ${VAR_NAME} syntax
 
----
+Check that your config files reference env vars (not hardcoded keys):
 
-## Rotating Keys
+```bash
+# Should show ${GOOGLE_API_KEY}, not literal keys
+grep -r "apiKey\|key" ~/.openclaw/openclaw.json ~/.openclaw/agents/*/agent/auth*.json
+```
 
-When you need to rotate a key (security incident, regular rotation):
+If you see hardcoded keys (`AIzaSy...`, `sk-proj-...`), they need to be replaced with `${VAR_NAME}`.
 
-1. Generate new key at provider's website
-2. Update `~/.openclaw/.env`
-3. Restart gateway: `openclaw gateway restart`
-4. Restart dashboard: `cd ~/oclaw-ops/dashboard && npm run start`
+## Syntax
 
-**Key rotation links:**
-- Telegram: Message `@BotFather` → `/revoke`
-- Anthropic: [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
-- OpenAI: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-- Google: [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
-- Brave: [brave.com/search/api](https://brave.com/search/api/)
+OpenClaw resolves environment variables using `${VAR_NAME}` syntax:
 
----
+### In openclaw.json
 
-## What NOT to Do
+```json
+{
+  "skills": {
+    "entries": {
+      "goplaces": {
+        "apiKey": "${GOOGLE_API_KEY}"
+      }
+    }
+  },
+  "messages": {
+    "tts": {
+      "elevenlabs": {
+        "apiKey": "${ELEVENLABS_API_KEY}"
+      }
+    }
+  }
+}
+```
 
-❌ Don't put secrets in `openclaw.json` (it might get committed)  
-❌ Don't create multiple `.env` files in different projects  
-❌ Don't commit `.env.example` files with real values  
-❌ Don't share secrets in chat/email (they end up in logs)  
+### In agent auth files
 
----
+```json
+{
+  "google": {
+    "mode": "api-key",
+    "key": "${GOOGLE_API_KEY}"
+  }
+}
+```
 
-## If You Accidentally Expose a Secret
+## Key Rotation
 
-1. **Rotate immediately** — Generate a new key
-2. **Check git history** — Use `git log -p | grep "SECRET"` to find exposure
-3. **Consider scrubbing** — For serious leaks, use `git filter-repo` to remove from history
-4. **Review access logs** — Check provider dashboards for unauthorized usage
+When you need to rotate a key (expired, compromised, or upgrading):
+
+1. **Update .env:**
+   ```bash
+   nano ~/.openclaw/.env
+   # Change GOOGLE_API_KEY=old_key to GOOGLE_API_KEY=new_key
+   ```
+
+2. **Restart gateway:**
+   ```bash
+   openclaw gateway restart
+   ```
+
+That's it! All agents and skills will pick up the new key immediately.
+
+## Troubleshooting
+
+### "API key expired" errors after rotation
+
+**Cause:** Config files still have hardcoded keys instead of `${VAR_NAME}` syntax.
+
+**Fix:**
+```bash
+# Find hardcoded keys
+grep -r "AIzaSy\|sk-proj-\|sk_e1" ~/.openclaw/openclaw.json ~/.openclaw/agents/
+
+# Replace with env var reference (example for Google key)
+sed -i 's/"key": "AIza[^"]*"/"key": "${GOOGLE_API_KEY}"/g' ~/.openclaw/agents/*/agent/auth-profiles.json
+```
+
+### Gateway not picking up new keys
+
+**Cause:** Gateway process needs full restart, not just SIGUSR1.
+
+**Fix:**
+```bash
+# Hard restart
+pkill -9 -f "openclaw-gateway"
+# Wait for systemd/supervisor to restart it
+sleep 3
+pgrep -f "openclaw-gateway"  # Verify new PID
+```
+
+### Which keys are required?
+
+**Minimum viable:**
+- `TELEGRAM_BOT_TOKEN` (or other channel token)
+- One AI provider key (`GOOGLE_API_KEY` for free tier, or `ANTHROPIC_API_KEY` with Max plan)
+
+**Recommended:**
+- `BRAVE_API_KEY` — web search (free tier: 2000 queries/month)
+- `ELEVENLABS_API_KEY` — TTS for voice replies
+
+**Optional:**
+- `OPENAI_API_KEY` — if using OpenAI models or Whisper transcription
+- `ANTHROPIC_API_KEY` — if using Claude (or subscribe to Max plan for unlimited)
+
+## Security Best Practices
+
+1. **Never commit .env** — already in `.gitignore`, but double-check
+2. **Restrict permissions:** `chmod 600 ~/.openclaw/.env`
+3. **Rotate keys regularly** — quarterly or after any security incident
+4. **Use different keys for prod vs dev** — if running multiple instances
+5. **Monitor usage** — set up billing alerts on provider dashboards
+
+## Migration from Hardcoded Keys
+
+If you have an existing HermitClaw setup with hardcoded keys in config files:
+
+```bash
+# 1. Backup current config
+cp ~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.backup
+
+# 2. Extract keys to .env
+nano ~/.openclaw/.env
+# Add: GOOGLE_API_KEY=<your_key_from_config>
+
+# 3. Replace hardcoded keys with ${VAR} syntax
+# For Google API key:
+sed -i 's/"apiKey": "AIza[^"]*"/"apiKey": "${GOOGLE_API_KEY}"/g' ~/.openclaw/openclaw.json
+sed -i 's/"key": "AIza[^"]*"/"key": "${GOOGLE_API_KEY}"/g' ~/.openclaw/agents/*/agent/*.json
+
+# 4. Restart and test
+openclaw gateway restart
+```
+
+## See Also
+
+- [Deployment Guide](../setup/deployment-guide.md) — Systemd service setup
+- [Recovery Guide](recovery-guide.md) — Restore from backups (includes encrypted .env)
+- [Multi-Instance Setup](../setup/multi-instance-setup.md) — Using different .env files per instance
